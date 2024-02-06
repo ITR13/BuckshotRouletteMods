@@ -131,7 +131,7 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 	if player.health <= 0 or opponent.health == 0:
 		return Result.new(OPTION_NONE, 0, 0)
 
-	var hash = blankCount * liveCount_max + liveCount
+	var hash = blankCount * (liveCount_max+1) + liveCount
 	hash = player.hash(hash)
 	hash = opponent.hash(hash)
 	hash = ((hash * 3 + handcuffState) * 3 + magnifyingGlassResult ) * 2

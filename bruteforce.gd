@@ -224,7 +224,7 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 		itemscores[OPTION_SHOOT_SELF] += -itemscoreTakenIfSelfShootLive * liveChance
 
 		if player.beer > 0:
-			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			var nextDamageIfBeerLive = result.healthScore
 			var itemscoreTakenIfBeerLive = result.itemScore
 			options[OPTION_BEER] += nextDamageIfBeerLive * liveChance
@@ -252,7 +252,7 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 			itemscores[OPTION_SHOOT_OTHER] += itemscoreTakenIfShootBlankContinueTurn * blankChance
 
 		if player.beer > 0:
-			result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+			result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			var nextDamageIfBeerBlank = result.healthScore
 			var itemscoreTakenIfBeerBlank = result.itemScore
 			options[OPTION_BEER] += nextDamageIfBeerBlank * blankChance

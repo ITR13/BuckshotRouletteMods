@@ -219,9 +219,9 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	var smokeAmount = min(player.cigarettes, player.max_health - player.health)
 
 	if liveCount == 0:
-		var shootWho = OPTION_SHOOT_OTHER
+		var shootWho = OPTION_SHOOT_SELF
 		if blankCount == 1 and randi() % 10 < 3:
-			shootWho = OPTION_SHOOT_SELF
+			shootWho = OPTION_SHOOT_OTHER
 
 		if player.player_index == 0 or blankCount > 0:
 			player = player.use("cigarettes", smokeAmount)

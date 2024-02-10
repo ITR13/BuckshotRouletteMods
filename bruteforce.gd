@@ -333,6 +333,9 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 	var highestItems = -10000.0
 	var results = []
 	for key in options:
+		if usedHandsaw and key == OPTION_SHOOT_SELF:
+			# Disallow this for now
+			continue
 		if options[key] < highestDamage:
 			continue
 		var result = Result.new(key, options[key], itemscores[key])

@@ -103,7 +103,7 @@ class BruteforcePlayer:
 		for attribute in self.get_property_list():
 			if not found and attribute["name"] == item:
 				found = true
-				new_player.set(attribute["name"], self.get(attribute["name"]) - 1)
+				new_player.set(attribute["name"], self.get(attribute["name"]) - count)
 			else:
 				new_player.set(attribute["name"], self.get(attribute["name"]))
 

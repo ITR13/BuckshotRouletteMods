@@ -4,7 +4,7 @@ const Bruteforce = preload("res://mods-unpacked/ITR-SmarterDealer/bruteforce.gd"
 
 func AlternativeChoice():
 	if (shellSpawner.sequenceArray.size() == 0):
-		return ""
+		return Bruteforce.OPTION_NONE
 
 	var magnifyingGlasses = 0
 	var cigarettes = 0

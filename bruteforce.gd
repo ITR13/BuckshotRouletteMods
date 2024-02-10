@@ -112,6 +112,23 @@ class BruteforcePlayer:
 
 		return new_player
 		
+	func createSubplayer(other: BruteforcePlayer):
+		if other.player_index != self.player_index:
+			return null
+		if other.max_health != self.max_health:
+			return null
+		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw:
+			return null
+		
+		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw)
+		copy.health = other.health
+		copy.magnify = other.magnify
+		copy.cigarettes = other.cigarettes
+		copy.beer = other.beer
+		copy.handcuffs = other.handcuffs
+		copy.handsaw = other.handsaw
+		return copy
+
 	func sum_items():
 		return self.magnify * 1.5 + self.beer + BruteforcePlayer.falloff(self.handsaw, 2) + BruteforcePlayer.falloff(self.handcuffs, 1) + self.cigarettes * 0.5
 
@@ -125,10 +142,50 @@ class BruteforcePlayer:
 			self.player_index, self.health, self.magnify, self.cigarettes, self.beer, self.handcuffs, self.handsaw
 		]
 
+class BruteforceGame:
+	var liveCount: int
+	var blankCount: int
+	var player: BruteforcePlayer
+	var opponent: BruteforcePlayer
+
+	func _init(liveCount, blankCount, player, opponent):
+		self.liveCount = liveCount
+		self.blankCount = blankCount
+		self.player = player
+		self.opponent = opponent
+
+	func CreateSubPlayers(liveCount, blankCount, player, opponent):
+		if liveCount > self.liveCount or blankCount > self.blankCount:
+			return null
+		if player.player_index == self.player.player_index:
+			player = self.player.createSubplayer(player)
+			opponent = self.opponent.createSubplayer(opponent)
+		else:
+			player = self.opponent.createSubplayer(player)
+			opponent = self.player.createSubplayer(opponent)
+
+		if player == null or opponent == null:
+			return null
+
+		return [player, opponent]
+
+static var cachedGame = null
 static var cache = {}
-static func GetBestChoiceAndDamage(liveCount, blankCount, player, opponent, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
+static func GetBestChoiceAndDamage(liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
 	ModLoaderLog.info("%s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
-	cache = {}
+
+	if cachedGame != null:
+		var subPlayers = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
+		if subPlayers != null:
+			player = subPlayers[0]
+			opponent = subPlayers[1]
+		else:
+			cachedGame = null
+
+	if cachedGame == null:
+		cache = {}
+		cachedGame = BruteforceGame.new(liveCount, blankCount, player, opponent)
+
 	var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result
 

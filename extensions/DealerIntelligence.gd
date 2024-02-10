@@ -75,8 +75,6 @@ func AlternativeChoice():
 	elif knownShell == "blank":
 		shell = Bruteforce.MAGNIFYING_BLANK
 		
-	if roundManager.playerCuffed:
-		await get_tree().create_timer(1.5, false).timeout
 	var playerHandcuffState = Bruteforce.HANDCUFF_NONE if not roundManager.playerCuffed else (Bruteforce.HANDCUFF_FREENEXT if roundManager.playerAboutToBreakFree else Bruteforce.HANDCUFF_CUFFED)
 
 	# Call the static function with the required arguments
@@ -89,12 +87,13 @@ func AlternativeChoice():
 	)
 	ModLoaderLog.info("%s" % result, "ITR-SmarterDealer")
 
-
 	# Return the result, you might want to handle the result accordingly
 	return result.option
 
 func DealerChoice()->void:
-	var choice = await AlternativeChoice();
+	if roundManager.playerCuffed:
+		await get_tree().create_timer(1.5, false).timeout
+	var choice = AlternativeChoice();
 	var dealerWantsToUse = ""
 	dealerTarget = ""
 	

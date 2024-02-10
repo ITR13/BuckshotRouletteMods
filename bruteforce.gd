@@ -211,15 +211,17 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 		if blankCount == 1 and randi() % 10 < 3:
 			shootWho = OPTION_SHOOT_SELF
 
-		if player.player_index == 0:
+		if player.player_index == 0 or blankCount > 0:
 			player = player.use("cigarettes", smokeAmount)
-			var playerScore = player.sum_items()
-			var opponentScore = opponent.sum_items()
-			return Result.new(shootWho, 0 + smokeAmount, playerScore - opponentScore)
+			player.health += smokeAmount
 
-		smokeAmount = min(opponent.cigarettes, opponent.max_health - opponent.health)
-		opponent = opponent.use("cigarettes", smokeAmount)
-		return Result.new(shootWho, 0 - smokeAmount, player.sum_items() - opponent.sum_items())
+		var opponentSmokeAmount = 0
+		if opponent.player_index == 0:
+			opponentSmokeAmount = min(opponent.cigarettes, opponent.max_health - opponent.health)
+			opponent = opponent.use("cigarettes", opponentSmokeAmount)
+			opponent.health += opponentSmokeAmount
+	
+		return Result.new(shootWho, smokeAmount - opponentSmokeAmount, player.sum_items() - opponent.sum_items())
 
 	if smokeAmount > 0:
 		player = player.use("cigarettes", smokeAmount)

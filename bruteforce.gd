@@ -148,7 +148,7 @@ class BruteforceGame:
 	var player: BruteforcePlayer
 	var opponent: BruteforcePlayer
 
-	func _init(liveCount, blankCount, player, opponent):
+	func _init(liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer):
 		self.liveCount = liveCount
 		self.blankCount = blankCount
 		self.player = player
@@ -189,7 +189,7 @@ static func GetBestChoiceAndDamage(liveCount, blankCount, player: BruteforcePlay
 	var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result
 
-static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player, opponent, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
+static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
 	if player.health <= 0 or opponent.health <= 0:
 		var winningBonus = -10 if player.health <= 0 else 10
 		return Result.new(OPTION_NONE, winningBonus, player.sum_items() - opponent.sum_items())
@@ -304,7 +304,7 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 			itemscores[OPTION_BEER] += itemscoreTakenIfBeerLive * liveChance
 
 	if blankCount > 0 and magnifyingGlassResult != MAGNIFYING_LIVE:
-		var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+		var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw and player.player_index != 0)
 		var nextDamageIfShootBlankContinueTurn = result.healthScore
 		var itemscoreTakenIfShootBlankContinueTurn = result.itemScore
 

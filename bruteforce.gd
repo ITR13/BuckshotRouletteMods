@@ -18,16 +18,19 @@ const OPTION_BEER = 5
 const OPTION_HANDCUFFS = 6
 const OPTION_HANDSAW = 7
 
+const ROUNDTYPE_NORMAL = 0
+const ROUNDTYPE_WIRECUT = 1
+const ROUNDTYPE_DOUBLEORNOTHING = 2
 
 class Result:
 	var option: int
 	var healthScore: float
 	var itemScore: float
-	
+
 	func _init(option, healthScore, itemScore):
 		self.option = option
 		self.healthScore = healthScore
-		self.itemScore = itemScore 
+		self.itemScore = itemScore
 
 	func _to_string():
 		return "Option %s [%s] [%s]" % [
@@ -37,16 +40,16 @@ class Result:
 # Player class
 class BruteforcePlayer:
 	var player_index: int
-	
+
 	var max_health: int
 	var health: int
-	
+
 	var max_magnify: int
 	var max_cigarettes: int
 	var max_beer: int
 	var max_handcuffs: int
 	var max_handsaw: int
-	
+
 	var magnify: int
 	var cigarettes: int
 	var beer: int
@@ -55,44 +58,44 @@ class BruteforcePlayer:
 
 	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw):
 		self.player_index = player_index
-		
+
 		self.max_health = max_health
 		self.health = max_health
-		
-		self.max_magnify = max_magnify 
-		self.max_cigarettes = max_cigarettes 
+
+		self.max_magnify = max_magnify
+		self.max_cigarettes = max_cigarettes
 		self.max_beer = max_beer
-		self.max_handcuffs = max_handcuffs 
+		self.max_handcuffs = max_handcuffs
 		self.max_handsaw = max_handsaw
-		
-		self.magnify = max_magnify 
-		self.cigarettes = max_cigarettes 
+
+		self.magnify = max_magnify
+		self.cigarettes = max_cigarettes
 		self.beer = max_beer
-		self.handcuffs = max_handcuffs 
+		self.handcuffs = max_handcuffs
 		self.handsaw = max_handsaw
 
 	func hash(num):
 		num *= 2
 		num += self.player_index
-		
+
 		num *= (self.max_health+1)
 		num += self.health
-		
+
 		num *= (self.max_magnify+1)
 		num += self.magnify
-		
+
 		num *= (self.max_cigarettes+1)
 		num += self.max_cigarettes
-		
+
 		num *= (self.max_beer+1)
 		num += self.beer
-		
+
 		num *= (self.max_handcuffs+1)
 		num += self.handcuffs
-		
+
 		num *= (self.max_handsaw+1)
 		num += self.handsaw
-		
+
 		return num
 
 	func use(item, count=1):
@@ -111,7 +114,7 @@ class BruteforcePlayer:
 			print("Invalid item:", item)
 
 		return new_player
-		
+
 	func createSubplayer(other: BruteforcePlayer):
 		if other.player_index != self.player_index:
 			return null
@@ -119,7 +122,7 @@ class BruteforcePlayer:
 			return null
 		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw:
 			return null
-		
+
 		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw)
 		copy.health = other.health
 		copy.magnify = other.magnify
@@ -171,8 +174,8 @@ class BruteforceGame:
 
 static var cachedGame = null
 static var cache = {}
-static func GetBestChoiceAndDamage(liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
-	ModLoaderLog.info("%s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
+static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
+	ModLoaderLog.info("%s: %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundType, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
 
 	if cachedGame != null:
 		var subPlayers = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
@@ -186,13 +189,22 @@ static func GetBestChoiceAndDamage(liveCount, blankCount, player: BruteforcePlay
 		cache = {}
 		cachedGame = BruteforceGame.new(liveCount, blankCount, player, opponent)
 
-	var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result
 
-static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
+static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
 	if player.health <= 0 or opponent.health <= 0:
 		var winningBonus = -10 if player.health <= 0 else 10
 		return Result.new(OPTION_NONE, winningBonus, player.sum_items() - opponent.sum_items())
+
+	# On wirecut rounds you can no longer smoke, and your health is set to 1
+	if roundType == ROUNDTYPE_WIRECUT:
+		if player.health == 2 or (player.health <= 2 and player.cigarettes > 0):
+			player = player.use("cigarettes", player.cigarettes)
+			player.health = 1
+		if opponent.health == 2 or (opponent.health <= 2 and opponent.cigarettes > 0):
+			opponent = opponent.use("cigarettes", opponent.cigarettes)
+			opponent.health = 1
 
 	var hash = blankCount * (liveCount_max+1) + liveCount
 	hash = player.hash(hash)
@@ -213,14 +225,12 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 
 		if player.player_index == 0 or blankCount > 0:
 			player = player.use("cigarettes", smokeAmount)
-			player.health += smokeAmount
 
 		var opponentSmokeAmount = 0
 		if opponent.player_index == 0:
 			opponentSmokeAmount = min(opponent.cigarettes, opponent.max_health - opponent.health)
 			opponent = opponent.use("cigarettes", opponentSmokeAmount)
-			opponent.health += opponentSmokeAmount
-	
+
 		return Result.new(shootWho, smokeAmount - opponentSmokeAmount, player.sum_items() - opponent.sum_items())
 
 	if smokeAmount > 0:
@@ -237,18 +247,18 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 	}
 
 	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0:
-		var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, HANDCUFF_CUFFED, magnifyingGlassResult, usedHandsaw)
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, HANDCUFF_CUFFED, magnifyingGlassResult, usedHandsaw)
 		options[OPTION_HANDCUFFS] = result.healthScore
 		itemscores[OPTION_HANDCUFFS] = result.itemScore
 
 	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and liveCount > 0 and blankCount > 0:
-		var result1 = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
-		var result2 = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
+		var result1 = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
+		var result2 = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
 		options[OPTION_MAGNIFY] = (result1.healthScore * blankCount + result2.healthScore * liveCount) / (blankCount + liveCount)
 		itemscores[OPTION_MAGNIFY] = (result1.itemScore * blankCount + result2.itemScore * liveCount) / (blankCount + liveCount)
 
 	if not usedHandsaw and player.handsaw > 0 and liveCount > 0:
-		var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
 		options[OPTION_HANDSAW] = result.healthScore
 		itemscores[OPTION_HANDSAW] = result.itemScore
 
@@ -275,19 +285,19 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 		var nextDamageIfSelfShootLive
 		var itemscoreTakenIfSelfShootLive
 		if handcuffState <= HANDCUFF_FREENEXT:
-			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, opponent.use("health", damageToDeal), player)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent.use("health", damageToDeal), player)
 			nextDamageIfShootLive = result.healthScore
 			itemscoreTakenIfShootLive = result.itemScore
 
-			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, opponent, player.use("health", damageToDeal))
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent, player.use("health", damageToDeal))
 			nextDamageIfSelfShootLive = result.healthScore
 			itemscoreTakenIfSelfShootLive = result.itemScore
 		else:
-			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, player, opponent.use("health", damageToDeal), HANDCUFF_FREENEXT)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player, opponent.use("health", damageToDeal), HANDCUFF_FREENEXT)
 			nextDamageIfShootLive = -result.healthScore
 			itemscoreTakenIfShootLive = -result.itemScore
 
-			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, player.use("health", damageToDeal), opponent, HANDCUFF_FREENEXT)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("health", damageToDeal), opponent, HANDCUFF_FREENEXT)
 			nextDamageIfSelfShootLive = -result.healthScore
 			itemscoreTakenIfSelfShootLive = -result.itemScore
 
@@ -297,14 +307,14 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 		itemscores[OPTION_SHOOT_SELF] += -itemscoreTakenIfSelfShootLive * liveChance
 
 		if player.beer > 0:
-			result = GetBestChoiceAndDamage_Internal(liveCount - 1, blankCount, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			var nextDamageIfBeerLive = result.healthScore
 			var itemscoreTakenIfBeerLive = result.itemScore
 			options[OPTION_BEER] += nextDamageIfBeerLive * liveChance
 			itemscores[OPTION_BEER] += itemscoreTakenIfBeerLive * liveChance
 
 	if blankCount > 0 and magnifyingGlassResult != MAGNIFYING_LIVE:
-		var result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw and player.player_index != 0)
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw and player.player_index != 0)
 		var nextDamageIfShootBlankContinueTurn = result.healthScore
 		var itemscoreTakenIfShootBlankContinueTurn = result.itemScore
 
@@ -312,20 +322,20 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 		itemscores[OPTION_SHOOT_SELF] += (itemscoreTakenIfShootBlankContinueTurn) * blankChance
 
 		if handcuffState <= HANDCUFF_FREENEXT:
-			result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, opponent, player)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, opponent, player)
 			var nextDamageIfShootBlank = -result.healthScore
 			var itemscoreIfShootBlank = -result.itemScore
 			options[OPTION_SHOOT_OTHER] += nextDamageIfShootBlank * blankChance
 			itemscores[OPTION_SHOOT_OTHER] += itemscoreIfShootBlank * blankChance
 		else:
-			result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player, opponent, HANDCUFF_FREENEXT, MAGNIFYING_NONE, false)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player, opponent, HANDCUFF_FREENEXT, MAGNIFYING_NONE, false)
 			nextDamageIfShootBlankContinueTurn = result.healthScore
 			itemscoreTakenIfShootBlankContinueTurn = result.itemScore
 			options[OPTION_SHOOT_OTHER] += nextDamageIfShootBlankContinueTurn * blankChance
 			itemscores[OPTION_SHOOT_OTHER] += itemscoreTakenIfShootBlankContinueTurn * blankChance
 
 		if player.beer > 0:
-			result = GetBestChoiceAndDamage_Internal(liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+			result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			var nextDamageIfBeerBlank = result.healthScore
 			var itemscoreTakenIfBeerBlank = result.itemScore
 			options[OPTION_BEER] += nextDamageIfBeerBlank * blankChance
@@ -334,6 +344,7 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 	var highestDamage = -10000.0
 	var highestItems = -10000.0
 	var results = []
+
 	for key in options:
 		if usedHandsaw and key == OPTION_SHOOT_SELF:
 			# Disallow this for now
@@ -346,22 +357,22 @@ static func GetBestChoiceAndDamage_Internal(liveCount, blankCount, liveCount_max
 			highestDamage = options[key]
 			highestItems = itemscores[key]
 			continue
-		
+
 		if itemscores[key] < highestItems:
 			continue
- 
+
 		results += [result]
 
 	if results.size() == 0:
 		print("Error, no valid options!")
 		return Result.new(OPTION_NONE, 0, 0)
-	
+
 	if results.size() == 1:
 		cache[hash] = results[0]
 		return results[0]
-	
+
 	results.shuffle()
-	
+
 	cache[hash] = results[0]
-	
+
 	return results[0]

@@ -101,8 +101,15 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			else:
 				playerHandcuffState = Bruteforce.HANDCUFF_CUFFED
 
+	var roundType = Bruteforce.ROUNDTYPE_NORMAL
+	if roundManager.defibCutterReady && !roundManager.endless:
+		roundType = Bruteforce.ROUNDTYPE_WIRECUT
+	elif roundManager.playerData.currentBatchIndex == 2:
+		roundType == Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
+
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
+		roundType,
 		liveCount, blankCount,
 		player if isPlayer else dealer, dealer if isPlayer else player,
 		playerHandcuffState,
@@ -148,7 +155,7 @@ func DealerChoice()->void:
 	else:
 		super()
 		return
-		
+
 	# use item
 	if (dealerWantsToUse != ""): 
 		if (dealerHoldingShotgun):
@@ -167,7 +174,7 @@ func DealerChoice()->void:
 		itemManager.numberOfItemsGrabbed_enemy -= 1
 		DealerChoice()
 		return
-		
+
 	# shoot
 	if (roundManager.waitingForDealerReturn):
 		await get_tree().create_timer(1.8, false).timeout

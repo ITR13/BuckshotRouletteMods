@@ -113,7 +113,12 @@ class BruteforcePlayer:
 		return new_player
 		
 	func sum_items():
-		return self.magnify + self.cigarettes + self.beer + self.handcuffs + self.handsaw
+		return self.magnify * 1.5 + self.beer + BruteforcePlayer.falloff(self.handsaw, 2) + BruteforcePlayer.falloff(self.handcuffs, 1) + self.cigarettes * 0.5
+
+	static func falloff(someNum, limit):
+		if someNum <= limit:
+			return someNum
+		return limit + (someNum-limit) / 2
 
 	func _to_string():
 		return "Player %s: Health=%s, Magnify=%s, Cigarettes=%s, Beer=%s, Handcuffs=%s, Handsaw=%s" % [

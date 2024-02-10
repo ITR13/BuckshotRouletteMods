@@ -107,7 +107,7 @@ class BruteforcePlayer:
 			else:
 				new_player.set(attribute["name"], self.get(attribute["name"]))
 
-		if not found:
+		if not found and item:
 			print("Invalid item:", item)
 
 		return new_player

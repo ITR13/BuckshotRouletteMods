@@ -138,8 +138,8 @@ class BruteforcePlayer:
 		return limit + (someNum-limit) / 2
 
 	func _to_string():
-		return "Player %s: Health=%s, Magnify=%s, Cigarettes=%s, Beer=%s, Handcuffs=%s, Handsaw=%s" % [
-			self.player_index, self.health, self.magnify, self.cigarettes, self.beer, self.handcuffs, self.handsaw
+		return "Player %s: Health=%s/%s, Magnify=%s, Cigarettes=%s, Beer=%s, Handcuffs=%s, Handsaw=%s" % [
+			self.player_index, self.health, self.max_health, self.magnify, self.cigarettes, self.beer, self.handcuffs, self.handsaw
 		]
 
 class BruteforceGame:

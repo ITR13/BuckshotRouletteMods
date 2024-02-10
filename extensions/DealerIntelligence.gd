@@ -2,7 +2,7 @@ extends "res://scripts/DealerIntelligence.gd"
 
 const Bruteforce = preload("res://mods-unpacked/ITR-SmarterDealer/bruteforce.gd") 
 
-func AlternativeChoice():
+func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if (shellSpawner.sequenceArray.size() == 0):
 		return Bruteforce.OPTION_NONE
 
@@ -25,8 +25,6 @@ func AlternativeChoice():
 			handsaw += 1
 			
 	var startingHealth = roundManager.roundArray[0].startingHealth
-	if (cigarettes > 0 and roundManager.health_opponent < startingHealth):
-		return Bruteforce.OPTION_CIGARETTES
 		
 	var liveCount = 0
 	var blankCount = 0
@@ -54,6 +52,14 @@ func AlternativeChoice():
 		elif (item == "handsaw"):
 			handsawP += 1
 
+	if isPlayer:
+		if cigarettesP > 0 and roundManager.health_player < startingHealth:
+			return Bruteforce.OPTION_CIGARETTES
+	else:
+		if (cigarettes > 0 and roundManager.health_opponent < startingHealth):
+			return Bruteforce.OPTION_CIGARETTES
+
+
 	# Create instances of BruteforcePlayer for player and opponent
 	var player = Bruteforce.BruteforcePlayer.new(
 		0,
@@ -70,17 +76,35 @@ func AlternativeChoice():
 	dealer.health = roundManager.health_opponent
 
 	var shell = Bruteforce.MAGNIFYING_NONE
-	if knownShell == "live":
-		shell = Bruteforce.MAGNIFYING_LIVE
-	elif knownShell == "blank":
-		shell = Bruteforce.MAGNIFYING_BLANK
-		
-	var playerHandcuffState = Bruteforce.HANDCUFF_NONE if not roundManager.playerCuffed else (Bruteforce.HANDCUFF_FREENEXT if roundManager.playerAboutToBreakFree else Bruteforce.HANDCUFF_CUFFED)
+	if overrideShell:
+		if overrideShell == "live":
+			shell = Bruteforce.MAGNIFYING_LIVE
+		elif overrideShell == "blank":
+			shell = Bruteforce.MAGNIFYING_BLANK		
+	else:
+		if knownShell == "live":
+			shell = Bruteforce.MAGNIFYING_LIVE
+		elif knownShell == "blank":
+			shell = Bruteforce.MAGNIFYING_BLANK
+
+	var playerHandcuffState = Bruteforce.HANDCUFF_NONE 
+	if isPlayer:
+		if roundManager.dealerCuffed:
+			if dealerAboutToBreakFree:
+				playerHandcuffState = Bruteforce.HANDCUFF_FREENEXT
+			else:
+				playerHandcuffState = Bruteforce.HANDCUFF_CUFFED
+	else:
+		if roundManager.playerCuffed:
+			if roundManager.playerAboutToBreakFree:
+				playerHandcuffState = Bruteforce.HANDCUFF_FREENEXT
+			else:
+				playerHandcuffState = Bruteforce.HANDCUFF_CUFFED
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
 		liveCount, blankCount,
-		dealer, player,
+		player if isPlayer else dealer, dealer if isPlayer else player,
 		playerHandcuffState,
 		shell,
 		roundManager.barrelSawedOff

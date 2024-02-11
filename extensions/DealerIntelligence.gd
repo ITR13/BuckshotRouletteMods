@@ -11,7 +11,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var beer = 0
 	var handcuffs = 0
 	var handsaw = 0
-		
+
 	for item in itemManager.itemArray_dealer:
 		if (item == "magnifying glass"):
 			magnifyingGlasses += 1
@@ -23,9 +23,9 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			handcuffs += 1
 		elif (item == "handsaw"):
 			handsaw += 1
-			
+
 	var startingHealth = roundManager.roundArray[0].startingHealth
-		
+
 	var liveCount = 0
 	var blankCount = 0
 	for shell in shellSpawner.sequenceArray:
@@ -39,7 +39,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var beerP = 0
 	var handcuffsP = 0
 	var handsawP = 0
-		
+
 	for item in itemManager.itemArray_player:
 		if (item == "magnifying glass"):
 			magnifyingGlassesP += 1
@@ -67,7 +67,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		magnifyingGlassesP, cigarettesP, beerP, handcuffsP, handsawP
 	)
 	player.health = roundManager.health_player
-	
+
 	var dealer = Bruteforce.BruteforcePlayer.new(
 		1,
 		startingHealth,
@@ -109,7 +109,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	else:
 		# Makes us randomize a bit too much, but it doesn't do any harm
 		Bruteforce.RandomizeLethality()
-	
+
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
@@ -131,7 +131,7 @@ func DealerChoice()->void:
 	var choice = AlternativeChoice();
 	var dealerWantsToUse = ""
 	dealerTarget = ""
-	
+
 	if choice == Bruteforce.OPTION_SHOOT_OTHER:
 		dealerTarget = "player"
 	elif choice == Bruteforce.OPTION_SHOOT_SELF:

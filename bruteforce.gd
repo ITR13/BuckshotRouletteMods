@@ -47,7 +47,7 @@ class Result:
 
 	func _to_string():
 		return "Option %s [%s] [%s] (%s)" % [
-			self.option, self.healthScore, self.itemScore, self.round3Score
+			self.option, snapped(self.healthScore, 0.000001), snapped(self.itemScore, 0.000001), snapped(self.round3Score, 0.000001)
 		]
 
 # Player class

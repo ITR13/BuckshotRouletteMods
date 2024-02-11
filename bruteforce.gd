@@ -384,7 +384,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 			continue
 
 		# We're doing messy stuff, so we want to just override this
-		var option = Result.new(key, options[key].round3Score, options[key].healthScore, options[key].itemScore)
+		var option = Result.new(key, options[key].round3Score, options[key].healthScore+smokeAmount, options[key].itemScore)
 
 		if roundType == ROUNDTYPE_DOUBLEORNOTHING and not (player.player_index == 0 and player.health <= potentialEnemyDamage) and round3Lethality >= 0:
 			# If it's double or nothing then we want to try stockpiling items

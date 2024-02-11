@@ -233,15 +233,15 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if player.health <= 0 or opponent.health <= 0:
 		var isDead = player.health <= 0
 		var deadPlayerIs0 = (player.player_index if isDead else opponent.player_index) == 0
-		
+
 		# Winning player always gets a bonus
-		var winningBonus = -10 if isDead else 10
+		var winningBonus = -10.0 if isDead else 10.0
 		# On round 3, prioritize getting items
 		var round3Score = player.sum_items_round3() - opponent.sum_items_round3()
 		if deadPlayerIs0:
 			# If we _can_ kill the player then lethality decides if the ai prioritizes murder or stockpiling
 			round3Score += -round3Lethality if isDead else round3Lethality
-		
+
 		return Result.new(OPTION_NONE, round3Score, winningBonus, player.sum_items() - opponent.sum_items())
 
 	# On wirecut rounds you can no longer smoke, and your health is set to 1
@@ -294,18 +294,18 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		OPTION_SHOOT_SELF: Result.new(OPTION_SHOOT_SELF, 0, 0, 0),
 	}
 
-	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0:
+	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0 and (roundType == ROUNDTYPE_DOUBLEORNOTHING or (liveCount+blankCount) > 1):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, HANDCUFF_CUFFED, magnifyingGlassResult, usedHandsaw)
 		options[OPTION_HANDCUFFS] = result
 
-	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and liveCount > 0 and blankCount > 0:
+	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and (roundType == ROUNDTYPE_DOUBLEORNOTHING or (liveCount > 0 and blankCount > 0)):
 		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
 		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
 		options[OPTION_MAGNIFY] = blankResult.mult(blankCount) 
 		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
 		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
 
-	if not usedHandsaw and player.handsaw > 0 and liveCount > 0:
+	if not usedHandsaw and player.handsaw > 0 and (roundType == ROUNDTYPE_DOUBLEORNOTHING or liveCount > 0):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
 		options[OPTION_HANDSAW] = result
 

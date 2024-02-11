@@ -1,7 +1,7 @@
 {
 	"name": "SmarterDealer",
 	"namespace": "ITR",
-	"version_number": "1.0.1",
+	"version_number": "1.0.2",
 	"description": "Improves the Dealer AI",
 	"dependencies": [],
 	"website_url": "",

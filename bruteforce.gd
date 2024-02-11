@@ -225,6 +225,8 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 
 		if player.player_index == 0 or blankCount > 0:
 			player = player.use("cigarettes", smokeAmount)
+		else:
+			smokeAmount = 0
 
 		var opponentSmokeAmount = 0
 		if opponent.player_index == 0:

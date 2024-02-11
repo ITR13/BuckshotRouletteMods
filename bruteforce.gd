@@ -214,7 +214,17 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 		cache = {}
 		cachedGame = BruteforceGame.new(liveCount, blankCount, player, opponent)
 
-	ModLoaderLog.info("%s: %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundType, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
+	var roundString
+	if roundType == ROUNDTYPE_NORMAL:
+		roundString = "Normal"
+	elif roundType == ROUNDTYPE_WIRECUT:
+		roundString = "WireCut"
+	elif round3Lethality == -1:
+		roundString = "Normal (DoN)"
+	else:
+		roundString = "Lethality %s" % round3Lethality
+
+	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundString, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
 
 	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result

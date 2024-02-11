@@ -106,6 +106,10 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		roundType = Bruteforce.ROUNDTYPE_WIRECUT
 	elif roundManager.playerData.currentBatchIndex == 2:
 		roundType == Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
+	else:
+		# Makes us randomize a bit too much, but it doesn't do any harm
+		Bruteforce.RandomizeLethality()
+	
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(

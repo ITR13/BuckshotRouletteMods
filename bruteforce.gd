@@ -98,7 +98,7 @@ class BruteforcePlayer:
 		num += self.magnify
 
 		num *= (self.max_cigarettes+1)
-		num += self.max_cigarettes
+		num += self.cigarettes
 
 		num *= (self.max_beer+1)
 		num += self.beer

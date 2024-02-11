@@ -159,8 +159,8 @@ class BruteforcePlayer:
 		return limit + (someNum-limit) * overmult
 
 	func _to_string():
-		return "Player %s: Health=%s/%s, Magnify=%s, Cigarettes=%s, Beer=%s, Handcuffs=%s, Handsaw=%s" % [
-			self.player_index, self.health, self.max_health, self.magnify, self.cigarettes, self.beer, self.handcuffs, self.handsaw
+		return "Player %s: Health=%s/%s, Magnify=%s/%s, Cigarettes=%s/%s, Beer=%s/%s, Handcuffs=%s/%s, Handsaw=%s/%s" % [
+			self.player_index, self.health, self.max_health, self.magnify, self.max_magnify, self.cigarettes, self.max_cigarettes, self.beer, self.max_beer, self.handcuffs, self.max_handcuffs, self.handsaw, self.max_handsaw
 		]
 
 class BruteforceGame:
@@ -195,12 +195,11 @@ static func RandomizeLethality():
 	# 10 is the highest, -1 disables it completely
 	round3Lethality = randi_range(-1, 10)
 
+static var printOptions = false
 static var round3Lethality = 0
 static var cachedGame = null
 static var cache = {}
 static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false)->Result:
-	ModLoaderLog.info("%s: %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundType, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
-
 	if cachedGame != null:
 		var subPlayers = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
 		if subPlayers != null:
@@ -212,6 +211,7 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 	if cachedGame == null:
 		cache = {}
 		cachedGame = BruteforceGame.new(liveCount, blankCount, player, opponent)
+	ModLoaderLog.info("%s: %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundType, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
 
 	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result
@@ -348,6 +348,9 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		if player.beer > 0:
 			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
+
+	if printOptions:
+		print(options)
 
 	var highestDamage = -10000.0
 	var highestItems = -10000.0

@@ -34,7 +34,7 @@ class Result:
 		self.healthScore = healthScore
 		self.itemScore = itemScore
 
-	func mult(multiplier=-1):
+	func mult(multiplier=-1.0):
 		return Result.new(self.option, multiplier*self.round3Score, multiplier*self.healthScore, multiplier*self.itemScore)
 
 	func mutAdd(other: Result):
@@ -289,11 +289,11 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		options[OPTION_HANDCUFFS] = result
 
 	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and liveCount > 0 and blankCount > 0:
-		var result1 = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
-		var result2 = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
-		options[OPTION_MAGNIFY] = result1.mult(blankCount) 
-		options[OPTION_MAGNIFY].mutAdd(result2.mult(liveCount))
-		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1/(blankCount + liveCount))
+		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
+		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
+		options[OPTION_MAGNIFY] = blankResult.mult(blankCount) 
+		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
+		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
 
 	if not usedHandsaw and player.handsaw > 0 and liveCount > 0:
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
@@ -320,8 +320,8 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		if handcuffState <= HANDCUFF_FREENEXT:
 			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent.use("health", damageToDeal), player)
 			resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent, player.use("health", damageToDeal))
-			resultIfShootLife = resultIfShootLife.mult(-1)
-			resultIfSelfShootLive = resultIfSelfShootLive.mult(-1)
+			resultIfShootLife = resultIfShootLife.mult(-1.0)
+			resultIfSelfShootLive = resultIfSelfShootLive.mult(-1.0)
 		else:
 			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player, opponent.use("health", damageToDeal), HANDCUFF_FREENEXT)
 			resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("health", damageToDeal), opponent, HANDCUFF_FREENEXT)

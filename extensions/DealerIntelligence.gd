@@ -105,7 +105,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if roundManager.defibCutterReady && !roundManager.endless:
 		roundType = Bruteforce.ROUNDTYPE_WIRECUT
 	elif roundManager.playerData.currentBatchIndex == 2:
-		roundType == Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
+		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
 	else:
 		# Makes us randomize a bit too much, but it doesn't do any harm
 		Bruteforce.RandomizeLethality()

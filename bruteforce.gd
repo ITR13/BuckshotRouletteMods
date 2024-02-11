@@ -200,11 +200,13 @@ static var round3Lethality = 0
 static var cachedGame = null
 static var cache = {}
 static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false)->Result:
+	var liveCountMax = liveCount
 	if cachedGame != null:
 		var subPlayers = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
 		if subPlayers != null:
 			player = subPlayers[0]
 			opponent = subPlayers[1]
+			liveCountMax = cachedGame.liveCount
 		else:
 			cachedGame = null
 
@@ -213,7 +215,8 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 		cachedGame = BruteforceGame.new(liveCount, blankCount, player, opponent)
 	ModLoaderLog.info("%s: %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundType, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
 
-	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+
+	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result
 
 static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false)->Result:

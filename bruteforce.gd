@@ -367,7 +367,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
 
 	if printOptions:
-		print(options)
+		print(options, " (", hash, ")")
 
 	var highestDamage = -10000.0
 	var highestItems = -10000.0

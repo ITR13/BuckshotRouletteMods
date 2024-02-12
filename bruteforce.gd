@@ -315,6 +315,12 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
 		options[OPTION_HANDSAW] = result
 
+	if donLogic and player.cigarettes > 0:
+		# On double or nothing rounds you might want to waste cigarettes to have them carry over to the next round
+		# Technically you might want this even on regular rounds, but it makes the logic messy. Same reason for don-checks above
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("cigarettes"), opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		options[OPTION_CIGARETTES] = result
+
 	if player.beer > 0:
 		options[OPTION_BEER] = Result.new(OPTION_BEER, 0, 0, 0)
 

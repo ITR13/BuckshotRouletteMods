@@ -265,6 +265,9 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if cache.has(hash):
 		return cache[hash].clone()
 
+	# Double or nothing round has special logic if bloodthirst is not -1
+	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING and round3Lethality != -1
+
 	var smokeAmount = min(player.cigarettes, player.max_health - player.health)
 
 	if liveCount == 0:
@@ -297,18 +300,18 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if not usedHandsaw:
 		options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, 0, 0, 0)
 
-	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0 and (roundType == ROUNDTYPE_DOUBLEORNOTHING or (liveCount+blankCount) > 1):
+	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0 and (donLogic or (liveCount+blankCount) > 1):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, HANDCUFF_CUFFED, magnifyingGlassResult, usedHandsaw)
 		options[OPTION_HANDCUFFS] = result
 
-	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and (roundType == ROUNDTYPE_DOUBLEORNOTHING or (liveCount > 0 and blankCount > 0)):
+	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and (donLogic or (liveCount > 0 and blankCount > 0)):
 		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
 		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
 		options[OPTION_MAGNIFY] = blankResult.mult(blankCount) 
 		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
 		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
 
-	if not usedHandsaw and player.handsaw > 0 and (roundType == ROUNDTYPE_DOUBLEORNOTHING or liveCount > 0):
+	if not usedHandsaw and player.handsaw > 0 and (donLogic or liveCount > 0):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
 		options[OPTION_HANDSAW] = result
 

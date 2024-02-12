@@ -231,6 +231,12 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 	return result
 
+const EPSILON = 0.00000000000001
+static func Compare(a, b):
+	if abs(a-b) < EPSILON:
+		return 0
+	return -1 if a < b else 1
+		
 static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false)->Result:
 	if player.health <= 0 or opponent.health <= 0:
 		var isDead = player.health <= 0
@@ -389,7 +395,6 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if opponent.handcuffs > 0:
 		potentialEnemyDamage += 2 if opponent.handsaw > 1 else 1
 
-	const EPSILON = 0.00000000000001
 	for key in options:
 		if usedHandsaw and key == OPTION_SHOOT_SELF:
 			# Disallow this for now
@@ -401,26 +406,29 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		if roundType == ROUNDTYPE_DOUBLEORNOTHING and not (player.player_index == 0 and player.health <= potentialEnemyDamage) and round3Lethality >= 0:
 			# If it's double or nothing then we want to try stockpiling items
 			# We assume the player however will still try not to die if it's not in the danger zone:
-			if highestRound3 - option.round3Score < EPSILON:
+			var comparison = Compare(option.round3Score, highestRound3)
+			if comparison < 0:
+				continue
+			elif comparison > 0: 
 				# Forces it to add this option
 				highestDamage = -10000.0
 				highestItems = -10000.0
 				highestRound3 = option.round3Score
-			elif highestRound3 > option.round3Score:
-				continue
 
 
-		if option.healthScore - highestDamage < EPSILON:
+		var healthComparison = Compare(option.healthScore, highestDamage)
+		if  healthComparison < 0:
 			continue
 
-		if option.healthScore - highestDamage > EPSILON or option.itemScore - highestItems > EPSILON:
+		var itemComparison = Compare(option.itemScore, highestItems)
+		if healthComparison > 0 or itemComparison > 0:
 			results = [option]
 			highestDamage = option.healthScore
 			highestItems = option.itemScore
 			highestRound3 = option.round3Score
 			continue
 
-		if option.itemScore - highestItems < EPSILON:
+		if itemComparison < 0:
 			continue
 
 		results += [option]

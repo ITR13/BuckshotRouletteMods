@@ -146,7 +146,9 @@ class BruteforcePlayer:
 		return copy
 
 	func sum_items():
-		return self.magnify * 1.5 + self.beer + BruteforcePlayer.falloff(self.handsaw, 2) + BruteforcePlayer.falloff(self.handcuffs, 1) + self.cigarettes * 0.5
+		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
+		var freeScore = falloff(max(8 - totalItems - 4, 0), 2, 0.75)
+		return freeScore+self.magnify * 1.5 + self.beer + BruteforcePlayer.falloff(self.handsaw, 2) + BruteforcePlayer.falloff(self.handcuffs, 1) + self.cigarettes * 0.5
 
 	func sum_items_round3():
 		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs

@@ -355,6 +355,8 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player, opponent.use("health", damageToDeal), HANDCUFF_FREENEXT)
 			if not usedHandsaw:
 				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("health", damageToDeal), opponent, HANDCUFF_FREENEXT)
+			resultIfShootLife = resultIfShootLife.clone()
+			resultIfSelfShootLive = resultIfSelfShootLive.clone()
 
 		resultIfShootLife.healthScore += damageToDeal 
 		resultIfSelfShootLive.healthScore -= damageToDeal

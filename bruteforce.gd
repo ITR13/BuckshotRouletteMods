@@ -153,7 +153,7 @@ class BruteforcePlayer:
 	func sum_items_round3():
 		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
 		var freeScore = falloff(max(8 - totalItems - 4, 0), 3)
-		return totalItems+freeScore+self.magnify * 1.5 + BruteforcePlayer.falloff(self.beer, 2) - self.cigarettes + BruteforcePlayer.falloff(self.handsaw, 2, -1) + BruteforcePlayer.falloff(self.handcuffs, 1, -0.5)
+		return totalItems+freeScore+BruteforcePlayer.falloff(self.magnify, 4) * 1.5 + BruteforcePlayer.falloff(self.beer, 2) - self.cigarettes + BruteforcePlayer.falloff(self.handsaw, 2, -1) + BruteforcePlayer.falloff(self.handcuffs, 1, -0.5)
 
 	static func falloff(someNum, limit, overmult = 0.5):
 		if someNum <= limit:
@@ -316,6 +316,9 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		options[OPTION_MAGNIFY] = blankResult.mult(blankCount) 
 		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
 		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
+	elif donLogic and player.magnify > 0:
+		# Allow wasting magnifying glasses, though you literally never want to do this
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 
 	if not usedHandsaw and player.handsaw > 0 and (donLogic or liveCount > 0):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)

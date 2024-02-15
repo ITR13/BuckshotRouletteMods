@@ -147,13 +147,13 @@ class BruteforcePlayer:
 
 	func sum_items():
 		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
-		var freeScore = falloff(max(8 - totalItems - 4, 0), 2, 0.75)
+		var freeScore = falloff(4 - max(totalItems - 4, 0), 2, 0.75)
 		return freeScore+self.magnify * 1.5 + self.beer + BruteforcePlayer.falloff(self.handsaw, 2) + BruteforcePlayer.falloff(self.handcuffs, 1) + self.cigarettes * 0.5
 
 	func sum_items_round3():
 		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
-		var freeScore = falloff(max(8 - totalItems - 4, 0), 3)
-		return totalItems+freeScore+BruteforcePlayer.falloff(self.magnify, 4) * 1.5 + BruteforcePlayer.falloff(self.beer, 2) - self.cigarettes + BruteforcePlayer.falloff(self.handsaw, 2, -1) + BruteforcePlayer.falloff(self.handcuffs, 1, -0.5)
+		var freeScore = falloff(4 - max(totalItems - 4, 0), 3)
+		return totalItems+freeScore+BruteforcePlayer.falloff(self.magnify, 4) * 1.5 + BruteforcePlayer.falloff(self.beer, 2) - self.cigarettes*0.75 + BruteforcePlayer.falloff(self.handsaw, 2, -1) + BruteforcePlayer.falloff(self.handcuffs, 1, -0.5)
 
 	static func falloff(someNum, limit, overmult = 0.5):
 		if someNum <= limit:

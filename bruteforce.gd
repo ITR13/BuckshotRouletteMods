@@ -196,6 +196,8 @@ static func RandomizeLethality():
 	# How hard the bot should be trying to kill the player
 	# 10 is the highest, -1 disables it completely
 	round3Lethality = randi_range(-1, 10)
+	if round3Lethality > 3:
+		round3Lethality = 2 * (round3Lethality-2) * 2
 
 static var printOptions = false
 static var round3Lethality = 0
@@ -247,6 +249,8 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		# On round 3, prioritize getting items
 		var round3Score = player.sum_items_round3() - opponent.sum_items_round3()
 		if deadPlayerIs0:
+			# the player can only die once, the dealer can die more times
+			winningBonus *= 2
 			# If we _can_ kill the player then lethality decides if the ai prioritizes murder or stockpiling
 			round3Score += -round3Lethality if isDead else round3Lethality
 
@@ -294,6 +298,9 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		var round3Score = player.sum_items_round3() - opponent.sum_items_round3()
 		var result = Result.new(shootWho, round3Score, smokeAmount - opponentSmokeAmount, player.sum_items() - opponent.sum_items())
 		cache[hash] = result
+
+		# print("{ OPTION 0: ", result, "} (", hash, ")")
+
 		return result
 
 	if smokeAmount > 0:
@@ -408,7 +415,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		# We're doing messy stuff, so we want to just override this
 		var option = Result.new(key, options[key].round3Score, options[key].healthScore+smokeAmount, options[key].itemScore)
 
-		if roundType == ROUNDTYPE_DOUBLEORNOTHING and not (player.player_index == 0 and player.health <= potentialEnemyDamage) and round3Lethality >= 0:
+		if roundType == ROUNDTYPE_DOUBLEORNOTHING and player.player_index != 0 and round3Lethality >= 0:
 			# If it's double or nothing then we want to try stockpiling items
 			# We assume the player however will still try not to die if it's not in the danger zone:
 			var comparison = Compare(option.round3Score, highestRound3)

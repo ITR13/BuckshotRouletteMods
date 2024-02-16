@@ -2,9 +2,14 @@ extends "res://scripts/DealerIntelligence.gd"
 
 const Bruteforce = preload("res://mods-unpacked/ITR-SmarterDealer/bruteforce.gd") 
 
+var prevBatchIndex = -1
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if (shellSpawner.sequenceArray.size() == 0):
 		return Bruteforce.OPTION_NONE
+
+	if roundManager.playerData.currentBatchIndex != prevBatchIndex:
+		Bruteforce.RandomizeDealer()
+		prevBatchIndex = roundManager.playerData.currentBatchIndex
 
 	var magnifyingGlasses = 0
 	var cigarettes = 0
@@ -106,10 +111,6 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		roundType = Bruteforce.ROUNDTYPE_WIRECUT
 	elif roundManager.playerData.currentBatchIndex == 2:
 		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
-	else:
-		# Makes us randomize a bit too much, but it doesn't do any harm
-		Bruteforce.RandomizeLethality()
-
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(

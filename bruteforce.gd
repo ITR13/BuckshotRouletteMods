@@ -18,36 +18,57 @@ const OPTION_BEER = 5
 const OPTION_HANDCUFFS = 6
 const OPTION_HANDSAW = 7
 
+const FREESLOTS_INDEX = 8
+
 const ROUNDTYPE_NORMAL = 0
 const ROUNDTYPE_WIRECUT = 1
 const ROUNDTYPE_DOUBLEORNOTHING = 2
 
+const itemScoreArray = [
+	[], [], [], # Skip none, shoot self, shoot other
+	# 0    1    2    3    4    5    6     7    8
+	[ 0.0, 1.5, 3.0, 3.5, 4.5, 5.0, 6.5 , 6.8, 7.0  ], # Magnify
+	[ 0.0, 0.5, 1.0, 1.2, 1.2, 1.2, 1.2 , 1.2, 1.2  ], # Cigarette
+	[ 0.0, 1.0, 2.0, 3.0, 3.5, 4.0, 4.25, 4.5, 4.75 ], # Beer
+	[ 0.0, 1.2, 2.0, 2.5, 2.6, 2.7, 2.8 , 2.9, 3.0  ], # Handcuff
+	[ 0.0, 1.5, 2.6, 3.1, 3.5, 3.6, 3.7 , 3.8, 3.9  ], # Handsaw
+	[ 0.0, 1.0, 2.0, 2.6, 3.0, 3.0, 3.0 , 3.0, 3.0, ], # FreeSlots
+]
+
 class Result:
 	var option: int
-	var round3Score: float
-	var healthScore: float
-	var itemScore: float
+	var deathChance: Array[float]
+	var healthScore: Array[float]
+	var itemScore: Array[float]
 
-	func _init(option, round3Score, healthScore, itemScore):
+	func _init(option: int, deathChance, healthScore, itemScore):
 		self.option = option
-		self.round3Score = round3Score
-		self.healthScore = healthScore
-		self.itemScore = itemScore
+		self.deathChance.assign(deathChance)
+		self.healthScore.assign(healthScore)
+		self.itemScore.assign(itemScore)
 
-	func mult(multiplier=-1.0):
-		return Result.new(self.option, multiplier*self.round3Score, multiplier*self.healthScore, multiplier*self.itemScore)
+	func mult(multiplier):
+		return Result.new(
+			self.option, 
+			[multiplier*self.deathChance[0], multiplier*self.deathChance[1]],
+			[multiplier*self.healthScore[0], multiplier*self.healthScore[1]],
+			[multiplier*self.itemScore[0], multiplier*self.itemScore[1]]
+		)
 
 	func mutAdd(other: Result):
-		self.round3Score += other.round3Score
-		self.healthScore += other.healthScore
-		self.itemScore += other.itemScore
+		self.deathChance[0] += other.deathChance[0]
+		self.deathChance[1] += other.deathChance[1]
+		self.healthScore[0] += other.healthScore[0]
+		self.healthScore[1] += other.healthScore[1]
+		self.itemScore[0] += other.itemScore[0]
+		self.itemScore[1] += other.itemScore[1]
 
 	func clone():
-		return Result.new(self.option, self.round3Score, self.healthScore, self.itemScore)
+		return self.mult(1)
 
 	func _to_string():
-		return "Option %s [%s] [%s] (%s)" % [
-			self.option, snapped(self.healthScore, 0.000001), snapped(self.itemScore, 0.000001), snapped(self.round3Score, 0.000001)
+		return "Option %s [%s] [%s] [%s]" % [
+			self.option, self.deathChance, self.healthScore, self.itemScore
 		]
 
 # Player class
@@ -147,13 +168,18 @@ class BruteforcePlayer:
 
 	func sum_items():
 		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
-		var freeScore = falloff(4 - max(totalItems - 4, 0), 2, 0.75)
-		return freeScore+self.magnify * 1.5 + self.beer + BruteforcePlayer.falloff(self.handsaw, 2) + BruteforcePlayer.falloff(self.handcuffs, 1) + self.cigarettes * 0.5
-
-	func sum_items_round3():
-		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
-		var freeScore = falloff(4 - max(totalItems - 4, 0), 3)
-		return totalItems+freeScore+BruteforcePlayer.falloff(self.magnify, 4) * 1.5 + BruteforcePlayer.falloff(self.beer, 2) - self.cigarettes*0.75 + BruteforcePlayer.falloff(self.handsaw, 2, -1) + BruteforcePlayer.falloff(self.handcuffs, 1, -0.5)
+		var freeSlots = 8 - totalItems
+		
+		var score = 0
+		score += itemScoreArray[OPTION_MAGNIFY][self.magnify]
+		score += itemScoreArray[OPTION_BEER][self.beer]
+		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes]
+		score += itemScoreArray[OPTION_HANDSAW][self.handsaw]
+		score += itemScoreArray[OPTION_HANDCUFFS][self.handcuffs]
+		score += itemScoreArray[FREESLOTS_INDEX][freeSlots]
+		
+		return score
+		
 
 	static func falloff(someNum, limit, overmult = 0.5):
 		if someNum <= limit:
@@ -192,15 +218,7 @@ class BruteforceGame:
 
 		return [player, opponent]
 
-static func RandomizeLethality():
-	# How hard the bot should be trying to kill the player
-	# 10 is the highest, -1 disables it completely
-	round3Lethality = randi_range(-1, 10)
-	if round3Lethality > 3:
-		round3Lethality = 2 * (round3Lethality-2) * 2
-
 static var printOptions = false
-static var round3Lethality = 0
 static var cachedGame = null
 static var cache = {}
 static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false)->Result:
@@ -223,38 +241,37 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 		roundString = "Normal"
 	elif roundType == ROUNDTYPE_WIRECUT:
 		roundString = "WireCut"
-	elif round3Lethality == -1:
-		roundString = "Normal (DoN)"
 	else:
-		roundString = "Lethality %s" % round3Lethality
+		roundString = "DoN"
 
 	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundString, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
 
-	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw, true)
 	return result
 
 const EPSILON = 0.00000000000001
-static func Compare(a, b):
+static func Compare(a: float, b: float)->int:
 	if abs(a-b) < EPSILON:
 		return 0
 	return -1 if a < b else 1
 		
-static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false)->Result:
+static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false, isTopLayer=false)->Result:
 	if player.health <= 0 or opponent.health <= 0:
-		var isDead = player.health <= 0
-		var deadPlayerIs0 = (player.player_index if isDead else opponent.player_index) == 0
+		var deadPlayerIs0 = (player.player_index if player.health == 0 else opponent.player_index) == 0
+		
+		var noItemsScore = itemScoreArray[FREESLOTS_INDEX][8]
+		var itemScore: Array[float] = [noItemsScore, noItemsScore]
+		if roundType == ROUNDTYPE_DOUBLEORNOTHING and not deadPlayerIs0:
+			itemScore[player.player_index] = player.sum_items()
+			itemScore[opponent.player_index] = opponent.sum_items()
+		
+		var deathScore = [1.0, 0.0] if deadPlayerIs0 else [0.0, 1.0]
+		
+		var healthScore = [0.0, 0.0]
+		healthScore[player.player_index] = player.health
+		healthScore[opponent.player_index] = opponent.health
 
-		# Winning player always gets a bonus
-		var winningBonus = -10.0 if isDead else 10.0
-		# On round 3, prioritize getting items
-		var round3Score = player.sum_items_round3() - opponent.sum_items_round3()
-		if deadPlayerIs0:
-			# the player can only die once, the dealer can die more times
-			winningBonus *= 2
-			# If we _can_ kill the player then lethality decides if the ai prioritizes murder or stockpiling
-			round3Score += -round3Lethality if isDead else round3Lethality
-
-		return Result.new(OPTION_NONE, round3Score, winningBonus, player.sum_items() - opponent.sum_items())
+		return Result.new(OPTION_NONE, deathScore, healthScore, itemScore)
 
 	# On wirecut rounds you can no longer smoke, and your health is set to 1
 	if roundType == ROUNDTYPE_WIRECUT:
@@ -272,11 +289,11 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if usedHandsaw:
 		hash += 1
 
-	if cache.has(hash):
+	if cache.has(hash) and not isTopLayer:
 		return cache[hash].clone()
 
-	# Double or nothing round has special logic if bloodthirst is not -1
-	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING and round3Lethality != -1
+	# Double or nothing round has special logic
+	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING
 
 	var smokeAmount = min(player.cigarettes, player.max_health - player.health)
 
@@ -284,34 +301,52 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		var shootWho = OPTION_SHOOT_SELF
 		if blankCount == 1 and randi() % 10 < 3:
 			shootWho = OPTION_SHOOT_OTHER
-
-		if player.player_index == 0 or blankCount > 0:
-			player = player.use("cigarettes", smokeAmount)
-		else:
+		
+		var playerItemscore = player.sum_items()
+		if donLogic and blankCount > 0:
+			while player.cigarettes > 0:
+				var smokingPlayer = player.use("cigarettes")
+				var newItemscore = player.sum_items()
+				if newItemscore < playerItemscore:
+					break
+				player = smokingPlayer
+				playerItemscore = newItemscore
+	
+		if player.player_index != 0:
 			smokeAmount = 0
 
 		var opponentSmokeAmount = 0
 		if opponent.player_index == 0:
 			opponentSmokeAmount = min(opponent.cigarettes, opponent.max_health - opponent.health)
-			opponent = opponent.use("cigarettes", opponentSmokeAmount)
 
-		var round3Score = player.sum_items_round3() - opponent.sum_items_round3()
-		var result = Result.new(shootWho, round3Score, smokeAmount - opponentSmokeAmount, player.sum_items() - opponent.sum_items())
+		var opponentItemscore = opponent.sum_items()
+		
+		var health: Array[float] = [0.0, 0.0]
+		health[player.player_index] = player.health
+		health[opponent.player_index] = opponent.health
+		
+		var itemscore: Array[float] = [0.0, 0.0]
+		itemscore[player.player_index] = playerItemscore
+		itemscore[opponent.player_index] = opponentItemscore
+		
+		var result = Result.new(shootWho, [0.0, 0.0], health, itemscore)
 		cache[hash] = result
 
 		# print("{ OPTION 0: ", result, "} (", hash, ")")
 
 		return result
 
-	if smokeAmount > 0:
+	if donLogic:
+		smokeAmount = 0
+	elif smokeAmount > 0:
 		player = player.use("cigarettes", smokeAmount)
 		player.health += smokeAmount
 
 	var options = {
-		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, 0, 0, 0),
+		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),
 	}
 	if not usedHandsaw:
-		options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, 0, 0, 0)
+		options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
 	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0 and (donLogic or (liveCount+blankCount) > 1):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, HANDCUFF_CUFFED, magnifyingGlassResult, usedHandsaw)
@@ -334,11 +369,14 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if donLogic and player.cigarettes > 0:
 		# On double or nothing rounds you might want to waste cigarettes to have them carry over to the next round
 		# Technically you might want this even on regular rounds, but it makes the logic messy. Same reason for don-checks above
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("cigarettes"), opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		var healedPlayer = player.use("cigarettes")
+		if healedPlayer.health < healedPlayer.max_health:
+			healedPlayer.health += 1
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, healedPlayer, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
 		options[OPTION_CIGARETTES] = result
 
 	if player.beer > 0:
-		options[OPTION_BEER] = Result.new(OPTION_BEER, 0, 0, 0)
+		options[OPTION_BEER] = Result.new(OPTION_BEER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
 	var liveChance = liveCount / float(liveCount + blankCount)
 	var blankChance = blankCount / float(liveCount + blankCount)
@@ -354,22 +392,17 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 
 	if liveCount > 0 and magnifyingGlassResult != MAGNIFYING_BLANK:
 		var resultIfShootLife
-		var resultIfSelfShootLive = Result.new(0,0,0,0)
+		var resultIfSelfShootLive = Result.new(0,[0.0, 0.0],[0.0, 0.0],[0.0, 0.0])
 		if handcuffState <= HANDCUFF_FREENEXT:
 			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent.use("health", damageToDeal), player)
 			if not usedHandsaw:
 				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent, player.use("health", damageToDeal))
-			resultIfShootLife = resultIfShootLife.mult(-1.0)
-			resultIfSelfShootLive = resultIfSelfShootLive.mult(-1.0)
+			resultIfShootLife = resultIfShootLife.clone()
+			resultIfSelfShootLive = resultIfSelfShootLive.clone()
 		else:
 			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player, opponent.use("health", damageToDeal), HANDCUFF_FREENEXT)
 			if not usedHandsaw:
 				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("health", damageToDeal), opponent, HANDCUFF_FREENEXT)
-			resultIfShootLife = resultIfShootLife.clone()
-			resultIfSelfShootLive = resultIfSelfShootLive.clone()
-
-		resultIfShootLife.healthScore += damageToDeal 
-		resultIfSelfShootLive.healthScore -= damageToDeal
 
 		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootLife.mult(liveChance))
 		if not usedHandsaw:
@@ -386,7 +419,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 
 		if handcuffState <= HANDCUFF_FREENEXT:
 			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, opponent, player)
-			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(-blankChance))
+			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
 		else:
 			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player, opponent, HANDCUFF_FREENEXT, MAGNIFYING_NONE, false)
 			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
@@ -395,61 +428,45 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
 
-	if printOptions:
+	if printOptions or isTopLayer:
 		print(options, " (", hash, ")")
 
-	var highestDamage = -10000.0
-	var highestItems = -10000.0
-	var highestRound3 = -10000.0
+	var current: Result = null
 	var results: Array[Result] = []
-
-	var potentialEnemyDamage = 2 if opponent.handsaw > 0 else 1
-	if opponent.handcuffs > 0:
-		potentialEnemyDamage += 2 if opponent.handsaw > 1 else 1
 
 	for key in options:
 		if usedHandsaw and key == OPTION_SHOOT_SELF:
 			# Disallow this for now
 			continue
+			
+		var option = options[key].clone()
+		option.option = key
 
-		# We're doing messy stuff, so we want to just override this
-		var option = Result.new(key, options[key].round3Score, options[key].healthScore+smokeAmount, options[key].itemScore)
-
-		if roundType == ROUNDTYPE_DOUBLEORNOTHING and player.player_index != 0 and round3Lethality >= 0:
-			# If it's double or nothing then we want to try stockpiling items
-			# We assume the player however will still try not to die if it's not in the danger zone:
-			var comparison = Compare(option.round3Score, highestRound3)
-			if comparison < 0:
-				continue
-			elif comparison > 0: 
-				# Forces it to add this option
-				highestDamage = -10000.0
-				highestItems = -10000.0
-				highestRound3 = option.round3Score
-
-
-		var healthComparison = Compare(option.healthScore, highestDamage)
-		if  healthComparison < 0:
+		if current == null:
+			current = option
+			results = [current]
 			continue
-
-		var itemComparison = Compare(option.itemScore, highestItems)
-		if healthComparison > 0 or itemComparison > 0:
-			results = [option]
-			highestDamage = option.healthScore
-			highestItems = option.itemScore
-			highestRound3 = option.round3Score
+		
+		var comparison = CompareCurrent(player.player_index == 0, donLogic, current, option)
+		if comparison == 0:
+			results.append(option)
 			continue
-
-		if itemComparison < 0:
+		
+		if comparison < 0:
 			continue
+		
+		current = option
+		results = [current]
+		
+		#current = option
+		#results.append(option)
+		
+		#for i in range(len(results)-1, -1, -1):
+		#	if CompareCurrent(player.player_index == 0, donLogic, current, option) < 0:
+		#		results.remove_at(i)
 
-		results += [option]
 
-	if results.size() == 0:
-		print("Error, no valid options!")
-		return Result.new(OPTION_NONE, 0, 0, 0)
-
-	if results.size() == 1:
+	if results.size() <= 1:
 		cache[hash] = results[0]
 		return results[0]
 
@@ -458,3 +475,174 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	cache[hash] = results[0]
 
 	return results[0]
+
+
+static func RandomizeDealer():
+	dealerKillCutoff = 1-pow(randf(), 2)*0.5
+	dealerDeathCutoff = 1-pow(randf(), 2)*0.5
+	dealerDonItemMargin = 1-pow(randf(), 2)
+	dealerKillMargin = 1-pow(randf(), 2)
+	
+	print(
+		"Randomized dealer!\nkillCutoff %s\ndeathCutoff %s\ndealerDonItemMargin %s\ndealerKillMargin %s" % [
+			dealerKillCutoff, dealerDeathCutoff, dealerDonItemMargin, dealerKillMargin
+		]
+	)
+
+static func RandomizePlayer():
+	playerDeathSafety = pow(randf(), 2)
+	playerDonKillMargin = randf()
+	playerHealthMargin = 1-pow(randf(), 2)*0.5
+	playerDonHealthMargin = randf() * playerHealthMargin
+	print(
+		"Randomized player!\nplayerDeathSafety %s\nplayerDonKillMargin %s\nplayerHealthMargin %s\nplayerDonHealthMargin %s" % [
+			playerDeathSafety, playerDonKillMargin, playerHealthMargin, playerDonHealthMargin
+		]
+	)
+
+static var dealerKillCutoff: float = 0.8
+static var dealerDeathCutoff: float = 0.8
+static var dealerDonItemMargin: float = 0.3
+static var dealerKillMargin: float = 0.3
+
+static var playerDeathSafety: float = 0.3
+static var playerDonKillMargin: float = 0.8
+static var playerDonHealthMargin: float = 0.8
+static var playerHealthMargin: float = 0.8
+
+
+# -1 means current is better than other
+static func CompareCurrent(isPlayer0: bool, donLogic: bool, current: Result, other: Result)->int:
+	if isPlayer0:
+		if current.deathChance[0] > playerDeathSafety:
+			# Lower is better
+			var comparison = Compare(current.deathChance[0], other.deathChance[0])
+			if comparison != 0:
+				return comparison
+		elif Compare(other.deathChance[0], playerDeathSafety) > 0:
+			return -1
+	else:
+		if current.deathChance[1] > dealerDeathCutoff:
+			# Lower is better
+			var comparison = Compare(current.deathChance[1], other.deathChance[1])
+			if comparison != 0:
+				return comparison
+		elif Compare(other.deathChance[1], dealerDeathCutoff) > 0:
+			return -1
+
+	var myIndex = 0 if isPlayer0 else 1
+	var otherIndex = 1 if isPlayer0 else 0
+
+	if donLogic and not isPlayer0:
+		if current.deathChance[0] >= dealerKillCutoff:
+			if other.deathChance[0] < dealerKillCutoff:
+				return -1
+		elif other.deathChance[0] >= dealerKillCutoff:
+			return 1
+
+		# Higher is better
+		var itemComparison = Compare(other.itemScore[1], current.itemScore[1])
+		if itemComparison != 0:
+			return itemComparison
+		
+	else:
+		# Higher is better
+		var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
+		if killComparison != 0:
+			return killComparison
+
+	var healthDiff = current.healthScore[myIndex] - current.healthScore[otherIndex]
+	var otherHealthDiff = other.healthScore[myIndex] - other.healthScore[otherIndex]
+
+	# Higher is better
+	var comparison = Compare(otherHealthDiff, healthDiff)
+	if comparison != 0:
+		return comparison
+
+	var itemDiff = current.itemScore[myIndex] - current.itemScore[otherIndex]
+	var otherItemDiff = other.itemScore[myIndex] - other.itemScore[otherIndex]
+
+	# Higher is better
+	return Compare(otherItemDiff, itemDiff)
+
+
+# -1 means current is better than other
+static func CompareAsPlayer0Broken(donLogic: bool, current: Result, other: Result)->int:
+	if current.deathChance[0] > playerDeathSafety:
+		# Lower is better
+		var comparison = Compare(current.deathChance[0], other.deathChance[0])
+		if comparison != 0:
+			return comparison
+	elif Compare(other.deathChance[0], playerDeathSafety) > 0:
+		return -1
+
+	# Higher is better
+	var killComparison = Compare(other.deathChance[1], current.deathChance[1])
+	if killComparison > 0:
+		return killComparison
+	
+	if donLogic and Compare(other.deathChance[1], current.deathChance[1] * playerDonKillMargin) < 0:
+		return -1
+
+	# Add 10 to ensure it's positive
+	var healthDiff = current.healthScore[0] - current.healthScore[1] + 10
+	var otherHealthDiff = other.healthScore[0] - other.healthScore[1] + 10
+	
+	# Higher is better
+	var healthComparison = Compare(otherHealthDiff, healthDiff)
+	if healthComparison > 0:
+		return healthComparison
+	
+	if donLogic:
+		if Compare(otherHealthDiff, healthDiff * playerDonKillMargin) < 0:
+			return -1
+	elif Compare(otherHealthDiff, healthDiff * playerHealthMargin) < 0:
+		return -1
+
+
+	# Add 12 to ensure it's positive
+	var itemDiff = current.itemScore[0] - current.itemScore[1] + 12
+	var otherItemDiff = other.itemScore[0] - other.itemScore[1] + 12
+	
+	return Compare(otherItemDiff, itemDiff)
+
+
+
+# -1 is bad, +1 is good
+static func CompareAsDealerBroken(donLogic: bool, current: Result, other: Result)->int:
+	if current.deathChance[0] >= dealerKillCutoff:
+		if other.deathChance[0] < dealerKillCutoff:
+			return -1
+	elif other.deathChance[0] >= dealerKillCutoff:
+		return 1
+
+
+	# Add 20 to ensure it's positive
+	var itemDiff = current.itemScore[1] - current.itemScore[0] + 20
+	var otherItemDiff = other.itemScore[1] - other.itemScore[0] + 20
+	
+	if donLogic:
+		var itemComparison = Compare(otherItemDiff, itemDiff)
+		if itemComparison > 0:
+			return itemComparison
+		
+		if Compare(otherItemDiff, itemDiff * dealerDonItemMargin) < 0:
+			return 0
+	else:
+		# Higher is better
+		var killComparison = Compare(other.deathChance[0], current.deathChance[0])
+		if killComparison > 0:
+			return killComparison
+		
+		if donLogic and Compare(other.deathChance[0], current.deathChance[0] * dealerKillMargin) < 0:
+			return -1
+
+	var healthDiff = current.healthScore[1] - current.healthScore[0]
+	var otherHealthDiff = other.healthScore[1] - other.healthScore[0]
+
+	# Higher is better
+	var healthComparison = Compare(otherHealthDiff, healthDiff)
+	if healthComparison != 0:
+		return healthComparison
+
+	return Compare(otherItemDiff, itemDiff)

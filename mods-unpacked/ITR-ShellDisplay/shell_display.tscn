@@ -1,0 +1,96 @@
+[gd_scene load_steps=4 format=3 uid="uid://qketxbi48xtw"]
+
+[ext_resource type="Texture2D" uid="uid://bg0hg0r61w2d0" path="res://mods-unpacked/ITR-ShellDisplay/live_sprite.png" id="1_fl0eo"]
+[ext_resource type="Script" path="res://mods-unpacked/ITR-ShellDisplay/shell_display.gd" id="1_ib4cg"]
+[ext_resource type="Texture2D" uid="uid://ccqcwqsb22nxh" path="res://mods-unpacked/ITR-ShellDisplay/blank_sprite.png" id="2_4jau1"]
+
+[node name="Control" type="Control" node_paths=PackedStringArray("shownLive", "shownBlank")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.035
+offset_right = 0.0349731
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ib4cg")
+shownLive = [NodePath("shell sprite parent/live shell sprite"), NodePath("shell sprite parent/live shell sprite2"), NodePath("shell sprite parent/live shell sprite3"), NodePath("shell sprite parent/live shell sprite4")]
+shownBlank = [NodePath("shell sprite parent2/blank shell sprite"), NodePath("shell sprite parent2/blank shell sprite2"), NodePath("shell sprite parent2/blank shell sprite3"), NodePath("shell sprite parent2/blank shell sprite4")]
+
+[node name="shell sprite parent" type="GridContainer" parent="."]
+z_index = 10
+layout_direction = 3
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 20.0
+offset_bottom = 378.0
+grow_horizontal = 2
+scale = Vector2(0.15, 0.15)
+pivot_offset = Vector2(964, 0)
+size_flags_horizontal = 2
+size_flags_vertical = 10
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 35
+columns = 4
+
+[node name="live shell sprite" type="TextureRect" parent="shell sprite parent"]
+visible = false
+layout_mode = 2
+texture = ExtResource("1_fl0eo")
+
+[node name="live shell sprite2" type="TextureRect" parent="shell sprite parent"]
+visible = false
+layout_mode = 2
+texture = ExtResource("1_fl0eo")
+
+[node name="live shell sprite3" type="TextureRect" parent="shell sprite parent"]
+visible = false
+layout_mode = 2
+texture = ExtResource("1_fl0eo")
+
+[node name="live shell sprite4" type="TextureRect" parent="shell sprite parent"]
+visible = false
+layout_mode = 2
+texture = ExtResource("1_fl0eo")
+
+[node name="shell sprite parent2" type="GridContainer" parent="."]
+z_index = 10
+layout_direction = 3
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 20.0
+offset_bottom = 438.0
+grow_horizontal = 2
+scale = Vector2(0.15, 0.15)
+pivot_offset = Vector2(964, 0)
+size_flags_horizontal = 2
+size_flags_vertical = 10
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 35
+columns = 4
+
+[node name="blank shell sprite" type="TextureRect" parent="shell sprite parent2"]
+visible = false
+layout_mode = 2
+texture = ExtResource("2_4jau1")
+
+[node name="blank shell sprite2" type="TextureRect" parent="shell sprite parent2"]
+visible = false
+layout_mode = 2
+texture = ExtResource("2_4jau1")
+
+[node name="blank shell sprite3" type="TextureRect" parent="shell sprite parent2"]
+visible = false
+layout_mode = 2
+texture = ExtResource("2_4jau1")
+
+[node name="blank shell sprite4" type="TextureRect" parent="shell sprite parent2"]
+visible = false
+layout_mode = 2
+texture = ExtResource("2_4jau1")

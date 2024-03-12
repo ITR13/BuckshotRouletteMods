@@ -210,6 +210,8 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 	shellLoader.dialogue.HideText()
 
 func DealerChoice()->void:
+	if (roundManager.requestedWireCut):
+		await(roundManager.defibCutter.CutWire(roundManager.wireToCut))
 	if roundManager.playerCuffed:
 		await get_tree().create_timer(1.5, false).timeout
 	var choice = AlternativeChoice();

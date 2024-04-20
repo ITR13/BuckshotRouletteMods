@@ -23,4 +23,4 @@ func _ready() -> void:
 	shell_display = shell_display_prefab.instantiate()
 	add_child(shell_display)
 
-	
+	|1

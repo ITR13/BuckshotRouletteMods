@@ -1,6 +1,6 @@
 extends "res://scripts/DealerIntelligence.gd"
 
-const Bruteforce = preload("res://mods-unpacked/ITR-SmarterDealer/bruteforce.gd") 
+const Bruteforce = preload("res://mods-unpacked/ITR-SmarterDealer/bruteforce.gd")
 
 var thread_semaphore: Semaphore
 var main_semaphore: Semaphore
@@ -32,23 +32,15 @@ func _thread_function():
 		thread_choice = AlternativeChoice(thread_isPlayer, thread_overrideShell)
 		main_semaphore.post()
 
-var prevBatchIndex = -1
-var prevWonRounds = -1
-func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
-	if (shellSpawner.sequenceArray.size() == 0):
-		return Bruteforce.OPTION_NONE
-
-	if roundManager.playerData.currentBatchIndex != prevBatchIndex:
-		Bruteforce.RandomizeDealer()
-		prevBatchIndex = roundManager.playerData.currentBatchIndex
-
+func createPlayer(player_index, itemArray):
 	var magnifyingGlasses = 0
 	var cigarettes = 0
 	var beer = 0
 	var handcuffs = 0
 	var handsaw = 0
+	var medicine = 0
 
-	for item in itemManager.itemArray_dealer:
+	for item in itemArray:
 		if (item == "magnifying glass"):
 			magnifyingGlasses += 1
 		elif (item == "cigarettes"):
@@ -59,8 +51,25 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			handcuffs += 1
 		elif (item == "handsaw"):
 			handsaw += 1
+		elif (item == "expired medicine"):
+			medicine += 1
 
-	var startingHealth = roundManager.roundArray[0].startingHealth
+	return Bruteforce.BruteforcePlayer.new(
+		player_index,
+		roundManager.roundArray[0].startingHealth,
+		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine
+	)
+
+
+var prevBatchIndex = -1
+var prevWonRounds = -1
+func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
+	if (shellSpawner.sequenceArray.size() == 0):
+		return Bruteforce.OPTION_NONE
+
+	if roundManager.playerData.currentBatchIndex != prevBatchIndex:
+		Bruteforce.RandomizeDealer()
+		prevBatchIndex = roundManager.playerData.currentBatchIndex
 
 	var liveCount = 0
 	var blankCount = 0
@@ -70,53 +79,23 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		else:
 			blankCount += 1
 
-	var magnifyingGlassesP = 0
-	var cigarettesP = 0
-	var beerP = 0
-	var handcuffsP = 0
-	var handsawP = 0
-
-	for item in itemManager.itemArray_player:
-		if (item == "magnifying glass"):
-			magnifyingGlassesP += 1
-		elif (item == "cigarettes"):
-			cigarettesP += 1
-		elif (item == "beer"):
-			beerP += 1
-		elif (item == "handcuffs"):
-			handcuffsP += 1
-		elif (item == "handsaw"):
-			handsawP += 1
-
 	var roundType = Bruteforce.ROUNDTYPE_NORMAL
 	if roundManager.defibCutterReady && !roundManager.endless:
 		roundType = Bruteforce.ROUNDTYPE_WIRECUT
 	elif roundManager.playerData.currentBatchIndex == 2:
 		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
 
-	if roundType != roundType.ROUNDTYPE_DOUBLEORNOTHING:
-		if isPlayer:
-			if cigarettesP > 0 and roundManager.health_player < startingHealth:
-				return Bruteforce.OPTION_CIGARETTES
-		else:
-			if (cigarettes > 0 and roundManager.health_opponent < startingHealth):
-				return Bruteforce.OPTION_CIGARETTES
-
-
 	# Create instances of BruteforcePlayer for player and opponent
-	var player = Bruteforce.BruteforcePlayer.new(
-		0,
-		startingHealth,
-		magnifyingGlassesP, cigarettesP, beerP, handcuffsP, handsawP
-	)
+	var player = createPlayer(0, itemManager.itemArray_player)
 	player.health = roundManager.health_player
 
-	var dealer = Bruteforce.BruteforcePlayer.new(
-		1,
-		startingHealth,
-		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw
-	)
+	var dealer = createPlayer(1, itemManager.itemArray_dealer)
 	dealer.health = roundManager.health_opponent
+
+	if roundType != roundType.ROUNDTYPE_DOUBLEORNOTHING:
+		var check = player if isPlayer else dealer
+		if check.cigarettes > 0 and check.health > check.max_health:
+			return Bruteforce.OPTION_CIGARETTES
 
 	var shell = Bruteforce.MAGNIFYING_NONE
 	if overrideShell:
@@ -144,6 +123,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			else:
 				playerHandcuffState = Bruteforce.HANDCUFF_CUFFED
 
+	print("Calling GetBestChoiceAndDamage")
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
 		roundType,
@@ -281,6 +261,8 @@ func DealerChoice()->void:
 		usingHandsaw = true
 		roundManager.barrelSawedOff = true
 		roundManager.currentShotgunDamage = 2
+	elif choice == Bruteforce.OPTION_MEDICINE:
+		dealerWantsToUse = "expired medicine"
 	else:
 		super()
 		return

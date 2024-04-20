@@ -19,8 +19,9 @@ const OPTION_CIGARETTES = 4
 const OPTION_BEER = 5
 const OPTION_HANDCUFFS = 6
 const OPTION_HANDSAW = 7
+const OPTION_MEDICINE = 8
 
-const FREESLOTS_INDEX = 8
+const FREESLOTS_INDEX = 9
 
 const ROUNDTYPE_NORMAL = 0
 const ROUNDTYPE_WIRECUT = 1
@@ -34,6 +35,7 @@ const itemScoreArray = [
 	[ 0.0, 1.0, 2.0, 3.0, 3.5, 4.0, 4.25, 4.5, 4.75 ], # Beer
 	[ 0.0, 1.2, 2.0, 2.5, 2.6, 2.7, 2.8 , 2.9, 3.0  ], # Handcuff
 	[ 0.0, 1.5, 2.6, 3.1, 3.5, 3.6, 3.7 , 3.8, 3.9  ], # Handsaw
+	[ 0.0, 0.3, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0, 1.05 ], # Expired Medicine
 	[ 0.0, 1.0, 2.0, 2.6, 3.0, 3.0, 3.0 , 3.0, 3.0, ], # FreeSlots
 ]
 
@@ -96,8 +98,9 @@ class BruteforcePlayer:
 	var beer: int
 	var handcuffs: int
 	var handsaw: int
+	var medicine: int
 
-	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw):
+	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw, max_medicine):
 		self.player_index = player_index
 
 		self.max_health = max_health
@@ -108,12 +111,14 @@ class BruteforcePlayer:
 		self.max_beer = max_beer
 		self.max_handcuffs = max_handcuffs
 		self.max_handsaw = max_handsaw
+		self.max_medicine = max_medicine
 
 		self.magnify = max_magnify
 		self.cigarettes = max_cigarettes
 		self.beer = max_beer
 		self.handcuffs = max_handcuffs
 		self.handsaw = max_handsaw
+		self.medicine = max_medicine
 
 	func hash(num):
 		num *= 2
@@ -137,10 +142,13 @@ class BruteforcePlayer:
 		num *= (self.max_handsaw+1)
 		num += self.handsaw
 
+		num *= (self.max_medicine+1)
+		num += self.medicine
+
 		return num
 
 	func use(item, count=1):
-		var new_player = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw)
+		var new_player = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine)
 
 		# Copy attributes to the new instance
 		var found = false
@@ -161,10 +169,10 @@ class BruteforcePlayer:
 			return null
 		if other.max_health != self.max_health:
 			return null
-		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw:
+		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine:
 			return null
 
-		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw)
+		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine)
 		copy.health = other.health
 		copy.magnify = other.magnify
 		copy.cigarettes = other.cigarettes
@@ -212,7 +220,9 @@ class BruteforcePlayer:
 			"handcuffs": self.handcuffs,
 			"max_handcuffs": self.max_handcuffs,
 			"handsaw": self.handsaw,
-			"max_handsaw": self.max_handsaw
+			"max_handsaw": self.max_handsaw,
+			"medicine": self.medicine,
+			"max_medicine": self.max_medicine
 		}
 
 class BruteforceGame:
@@ -471,6 +481,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	elif donLogic and player.magnify > 0:
 		# Allow wasting magnifying glasses, though you literally never want to do this
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		options[OPTION_MAGNIFY] = result
 
 	if not usedHandsaw and player.handsaw > 0 and (donLogic or liveCount > 0):
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
@@ -487,6 +498,16 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 
 	if player.beer > 0:
 		options[OPTION_BEER] = Result.new(OPTION_BEER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+
+	if player.medicine > 0:
+		var goodMedicine = player.use("medicine")
+		goodMedicine.health += 2
+		var badMedicine = player.use("medicine")
+		badMedicine.health -= 1
+		var goodResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		var badResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		goodResult.mutAdd(badResult)
+		options[OPTION_MEDICINE] = goodResult.mult(0.5)
 
 	var liveChance = liveCount / float(liveCount + blankCount)
 	var blankChance = blankCount / float(liveCount + blankCount)
@@ -538,7 +559,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
 			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
 
-	if printOptions or isTopLayer:
+	if printOptions:
 		print(options, " (", hash, ")")
 
 	var current: Result = null

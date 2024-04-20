@@ -58,12 +58,19 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		elif (item == "handsaw"):
 			handsawP += 1
 
-	if isPlayer:
-		if cigarettesP > 0 and roundManager.health_player < startingHealth:
-			return Bruteforce.OPTION_CIGARETTES
-	else:
-		if (cigarettes > 0 and roundManager.health_opponent < startingHealth):
-			return Bruteforce.OPTION_CIGARETTES
+	var roundType = Bruteforce.ROUNDTYPE_NORMAL
+	if roundManager.defibCutterReady && !roundManager.endless:
+		roundType = Bruteforce.ROUNDTYPE_WIRECUT
+	elif roundManager.playerData.currentBatchIndex == 2:
+		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
+
+	if roundType != roundType.ROUNDTYPE_DOUBLEORNOTHING:
+		if isPlayer:
+			if cigarettesP > 0 and roundManager.health_player < startingHealth:
+				return Bruteforce.OPTION_CIGARETTES
+		else:
+			if (cigarettes > 0 and roundManager.health_opponent < startingHealth):
+				return Bruteforce.OPTION_CIGARETTES
 
 
 	# Create instances of BruteforcePlayer for player and opponent
@@ -106,12 +113,6 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 				playerHandcuffState = Bruteforce.HANDCUFF_FREENEXT
 			else:
 				playerHandcuffState = Bruteforce.HANDCUFF_CUFFED
-
-	var roundType = Bruteforce.ROUNDTYPE_NORMAL
-	if roundManager.defibCutterReady && !roundManager.endless:
-		roundType = Bruteforce.ROUNDTYPE_WIRECUT
-	elif roundManager.playerData.currentBatchIndex == 2:
-		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(

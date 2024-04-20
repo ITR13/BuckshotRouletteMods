@@ -39,6 +39,7 @@ func createPlayer(player_index, itemArray):
 	var handcuffs = 0
 	var handsaw = 0
 	var medicine = 0
+	var inverters = 0
 
 	for item in itemArray:
 		if (item == "magnifying glass"):
@@ -53,16 +54,19 @@ func createPlayer(player_index, itemArray):
 			handsaw += 1
 		elif (item == "expired medicine"):
 			medicine += 1
+		elif (item == "inverter"):
+			inverters += 1
 
 	return Bruteforce.BruteforcePlayer.new(
 		player_index,
 		roundManager.roundArray[0].startingHealth,
-		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine
+		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine, inverters
 	)
 
 
 var prevBatchIndex = -1
 var prevWonRounds = -1
+var inverted_shell = false
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if (shellSpawner.sequenceArray.size() == 0):
 		return Bruteforce.OPTION_NONE
@@ -104,10 +108,8 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		elif overrideShell == "blank":
 			shell = Bruteforce.MAGNIFYING_BLANK
 	else:
-		if knownShell == "live":
-			shell = Bruteforce.MAGNIFYING_LIVE
-		elif knownShell == "blank":
-			shell = Bruteforce.MAGNIFYING_BLANK
+		if dealerKnowsShell:
+			shell = Bruteforce.MAGNIFYING_LIVE if (shellSpawner.sequenceArray[0] == "live") != inverted_shell else Bruteforce.MAGNIFYING_BLANK
 
 	var playerHandcuffState = Bruteforce.HANDCUFF_NONE
 	if isPlayer:
@@ -123,15 +125,20 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			else:
 				playerHandcuffState = Bruteforce.HANDCUFF_CUFFED
 
+
+	var tempStates = Bruteforce.TempStates.new()
+	tempStates.handcuffState = playerHandcuffState
+	tempStates.magnifyingGlassResult = shell
+	tempStates.usedHandsaw = roundManager.barrelSawedOff
+
+
 	print("Calling GetBestChoiceAndDamage")
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
 		roundType,
 		liveCount, blankCount,
 		player if isPlayer else dealer, dealer if isPlayer else player,
-		playerHandcuffState,
-		shell,
-		roundManager.barrelSawedOff
+		tempStates
 	)
 	ModLoaderLog.info("%s" % result, "ITR-SmarterDealer")
 
@@ -239,8 +246,10 @@ func DealerChoice()->void:
 
 	if choice == Bruteforce.OPTION_SHOOT_OTHER:
 		dealerTarget = "player"
+		inverted_shell = false
 	elif choice == Bruteforce.OPTION_SHOOT_SELF:
 		dealerTarget = "self"
+		inverted_shell = false
 	elif choice  == Bruteforce.OPTION_CIGARETTES:
 		dealerWantsToUse = "cigarettes"
 	elif choice == Bruteforce.OPTION_HANDCUFFS:
@@ -256,6 +265,7 @@ func DealerChoice()->void:
 		# I added this to fix it
 		knownShell = ""
 		dealerKnowsShell = false
+		inverted_shell = false
 	elif choice == Bruteforce.OPTION_HANDSAW:
 		dealerWantsToUse = "handsaw"
 		usingHandsaw = true
@@ -263,6 +273,9 @@ func DealerChoice()->void:
 		roundManager.currentShotgunDamage = 2
 	elif choice == Bruteforce.OPTION_MEDICINE:
 		dealerWantsToUse = "expired medicine"
+	elif choice == Bruteforce.OPTION_INVERTER:
+		dealerWantsToUse = "inverter"
+		inverted_shell = true
 	else:
 		super()
 		return
@@ -297,4 +310,5 @@ func DealerChoice()->void:
 	dealerTarget = ""
 	knownShell = ""
 	dealerKnowsShell = false
+	inverted_shell = false
 	return

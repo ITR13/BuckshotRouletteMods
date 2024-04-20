@@ -20,8 +20,9 @@ const OPTION_BEER = 5
 const OPTION_HANDCUFFS = 6
 const OPTION_HANDSAW = 7
 const OPTION_MEDICINE = 8
+const OPTION_INVERTER = 9
 
-const FREESLOTS_INDEX = 9
+const FREESLOTS_INDEX = 10
 
 const ROUNDTYPE_NORMAL = 0
 const ROUNDTYPE_WIRECUT = 1
@@ -30,12 +31,13 @@ const ROUNDTYPE_DOUBLEORNOTHING = 2
 const itemScoreArray = [
 	[], [], [], # Skip none, shoot self, shoot other
 	# 0    1    2    3    4    5    6     7    8
-	[ 0.0, 1.5, 3.0, 3.5, 4.5, 5.0, 6.5 , 6.8, 7.0  ], # Magnify
+	[ 0.0, 1.5, 3.0, 4.0, 4.5, 5.0, 6.5 , 6.8, 7.0  ], # Magnify
 	[ 0.0, 0.5, 1.0, 1.2, 1.2, 1.2, 1.2 , 1.2, 1.2  ], # Cigarette
 	[ 0.0, 1.0, 2.0, 3.0, 3.5, 4.0, 4.25, 4.5, 4.75 ], # Beer
 	[ 0.0, 1.2, 2.0, 2.5, 2.6, 2.7, 2.8 , 2.9, 3.0  ], # Handcuff
 	[ 0.0, 1.5, 2.6, 3.1, 3.5, 3.6, 3.7 , 3.8, 3.9  ], # Handsaw
 	[ 0.0, 0.3, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0, 1.05 ], # Expired Medicine
+	[ 0.0, 1.2, 2.4, 3.3, 3.7, 4.1, 4.5 , 4.9, 5.4  ], # Inverter
 	[ 0.0, 1.0, 2.0, 2.6, 3.0, 3.0, 3.0 , 3.0, 3.0, ], # FreeSlots
 ]
 
@@ -92,6 +94,8 @@ class BruteforcePlayer:
 	var max_beer: int
 	var max_handcuffs: int
 	var max_handsaw: int
+	var max_medicine: int
+	var max_inverter: int
 
 	var magnify: int
 	var cigarettes: int
@@ -99,8 +103,9 @@ class BruteforcePlayer:
 	var handcuffs: int
 	var handsaw: int
 	var medicine: int
+	var inverter: int
 
-	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw, max_medicine):
+	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw, max_medicine, max_inverter):
 		self.player_index = player_index
 
 		self.max_health = max_health
@@ -112,6 +117,7 @@ class BruteforcePlayer:
 		self.max_handcuffs = max_handcuffs
 		self.max_handsaw = max_handsaw
 		self.max_medicine = max_medicine
+		self.max_inverter = max_inverter
 
 		self.magnify = max_magnify
 		self.cigarettes = max_cigarettes
@@ -119,6 +125,7 @@ class BruteforcePlayer:
 		self.handcuffs = max_handcuffs
 		self.handsaw = max_handsaw
 		self.medicine = max_medicine
+		self.inverter = max_inverter
 
 	func hash(num):
 		num *= 2
@@ -145,10 +152,13 @@ class BruteforcePlayer:
 		num *= (self.max_medicine+1)
 		num += self.medicine
 
+		num *= (self.max_inverter+1)
+		num += self.inverter
+
 		return num
 
 	func use(item, count=1):
-		var new_player = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine)
+		var new_player = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter)
 
 		# Copy attributes to the new instance
 		var found = false
@@ -169,10 +179,10 @@ class BruteforcePlayer:
 			return null
 		if other.max_health != self.max_health:
 			return null
-		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine:
+		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine or other.inverter > self.max_inverter:
 			return null
 
-		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine)
+		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter)
 		copy.health = other.health
 		copy.magnify = other.magnify
 		copy.cigarettes = other.cigarettes
@@ -182,7 +192,7 @@ class BruteforcePlayer:
 		return copy
 
 	func sum_items():
-		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs
+		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs + self.medicine + self.inverter
 		var freeSlots = 8 - totalItems
 
 		# Player 0 can consume cigarettes next turn, so saving them makes you less likely to draw more cigarettes
@@ -193,15 +203,11 @@ class BruteforcePlayer:
 		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes] * cigaretteMultiplier
 		score += itemScoreArray[OPTION_HANDSAW][self.handsaw]
 		score += itemScoreArray[OPTION_HANDCUFFS][self.handcuffs]
+		score += itemScoreArray[OPTION_MEDICINE][self.medicine]
+		score += itemScoreArray[OPTION_INVERTER][self.inverter]
 		score += itemScoreArray[FREESLOTS_INDEX][freeSlots]
 
 		return score
-
-
-	static func falloff(someNum, limit, overmult = 0.5):
-		if someNum <= limit:
-			return someNum
-		return limit + (someNum-limit) * overmult
 
 	func _to_string():
 		return JSON.stringify(self._to_dict())
@@ -222,7 +228,9 @@ class BruteforcePlayer:
 			"handsaw": self.handsaw,
 			"max_handsaw": self.max_handsaw,
 			"medicine": self.medicine,
-			"max_medicine": self.max_medicine
+			"max_medicine": self.max_medicine,
+			"inverter": self.inverter,
+			"max_inverter": self.max_inverter
 		}
 
 class BruteforceGame:
@@ -263,10 +271,69 @@ class BruteforceGame:
 			"Dealer": self.opponent._to_dict()
 		}
 
+class TempStates:
+	var handcuffState=HANDCUFF_NONE
+	var magnifyingGlassResult=MAGNIFYING_NONE
+	var usedHandsaw=false
+	var inverted=false
+
+	func clone():
+		var other = TempStates.new()
+		other.handcuffState = self.handcuffState
+		other.magnifyingGlassResult = self.magnifyingGlassResult
+		other.usedHandsaw = self.usedHandsaw
+		other.inverted = self.inverted
+		return other
+
+	func Cuff():
+		var other = self.clone()
+		other.handcuffState = HANDCUFF_CUFFED
+		return other
+
+	func Magnify(result):
+		var other = self.clone()
+		other.magnifyingGlassResult = result
+		return other
+
+	func Saw():
+		var other = self.clone()
+		other.usedHandsaw = true
+		return other
+
+	func Invert():
+		var other = self.clone()
+		other.inverted = not other.inverted
+		return other
+
+	func SkipBullet():
+		var other = self.clone()
+		other.inverted = false
+		other.magnifyingGlassResult = MAGNIFYING_NONE
+		return other
+
+	func hash(num):
+		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult ) * 4
+		if self.usedHandsaw:
+			num += 2
+		if self.inverted:
+			num += 1
+		return num
+
+	func _to_string():
+		return JSON.stringify(self._to_dict())
+
+	func _to_dict():
+		return {
+			"HandcuffState": self.handcuffState,
+			"MagnifyingGlassResult": self.magnifyingGlassResult,
+			"usedHandsaw": self.usedHandsaw,
+			"inverted": self.inverted,
+		}
+
 static var printOptions = false
 static var cachedGame = null
 static var cache = {}
-static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false):
+static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates):
 	var liveCountMax = liveCount
 	if cachedGame != null:
 		var subPlayers = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
@@ -289,9 +356,9 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 	else:
 		roundString = "DoN"
 
-	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundString, liveCount, blankCount, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw], "ITR-SmarterDealer")
+	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundString, liveCount, blankCount, player, opponent, tempStates], "ITR-SmarterDealer")
 
-	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, handcuffState, magnifyingGlassResult, usedHandsaw, true)
+	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, tempStates, true)
 	return result
 
 const EPSILON = 0.00000000000001
@@ -306,7 +373,7 @@ static func sum_array(array):
 		sum += element
 	return sum
 
-static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, handcuffState=HANDCUFF_NONE, magnifyingGlassResult=MAGNIFYING_NONE, usedHandsaw=false, isTopLayer=false):
+static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates, isTopLayer=false):
 	if player.health <= 0 or opponent.health <= 0:
 		var deadPlayerIs0 = (player.player_index if player.health == 0 else opponent.player_index) == 0
 
@@ -341,9 +408,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	var hash = blankCount * (liveCount_max+1) + liveCount
 	hash = player.hash(hash)
 	hash = opponent.hash(hash)
-	hash = ((hash * 3 + handcuffState) * 3 + magnifyingGlassResult ) * 2
-	if usedHandsaw:
-		hash += 1
+	hash = tempStates.hash(hash)
 
 	if cache.has(hash) and not isTopLayer:
 		return cache[hash].clone()
@@ -465,26 +530,26 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	var options = {
 		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),
 	}
-	if not usedHandsaw:
+	if not tempStates.usedHandsaw:
 		options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
-	if handcuffState <= HANDCUFF_NONE and player.handcuffs > 0 and (donLogic or (liveCount+blankCount) > 1):
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, HANDCUFF_CUFFED, magnifyingGlassResult, usedHandsaw)
+	if tempStates.handcuffState <= HANDCUFF_NONE and player.handcuffs > 0 and (donLogic or (liveCount+blankCount) > 1):
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handcuffs"), opponent, tempStates.Cuff())
 		options[OPTION_HANDCUFFS] = result
 
-	if magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and (donLogic or (liveCount > 0 and blankCount > 0)):
-		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_BLANK, usedHandsaw)
-		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, MAGNIFYING_LIVE, usedHandsaw)
+	if tempStates.magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and (donLogic or (liveCount > 0 and blankCount > 0)):
+		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, tempStates.Magnify(MAGNIFYING_BLANK))
+		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, tempStates.Magnify(MAGNIFYING_LIVE))
 		options[OPTION_MAGNIFY] = blankResult.mult(blankCount) 
 		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
 		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
 	elif donLogic and player.magnify > 0:
 		# Allow wasting magnifying glasses, though you literally never want to do this
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, tempStates)
 		options[OPTION_MAGNIFY] = result
 
-	if not usedHandsaw and player.handsaw > 0 and (donLogic or liveCount > 0):
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, handcuffState, magnifyingGlassResult, true)
+	if not tempStates.usedHandsaw and player.handsaw > 0 and (donLogic or liveCount > 0):
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("handsaw"), opponent, tempStates.Handsaw())
 		options[OPTION_HANDSAW] = result
 
 	if donLogic and player.cigarettes > 0:
@@ -493,7 +558,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		var healedPlayer = player.use("cigarettes")
 		if healedPlayer.health < healedPlayer.max_health:
 			healedPlayer.health += 1
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, healedPlayer, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, healedPlayer, opponent, tempStates)
 		options[OPTION_CIGARETTES] = result
 
 	if player.beer > 0:
@@ -504,69 +569,87 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 		goodMedicine.health += 2
 		var badMedicine = player.use("medicine")
 		badMedicine.health -= 1
-		var goodResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
-		var badResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, opponent, handcuffState, magnifyingGlassResult, usedHandsaw)
+		var goodResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, opponent, tempStates)
+		var badResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, opponent, tempStates)
 		goodResult.mutAdd(badResult)
 		options[OPTION_MEDICINE] = goodResult.mult(0.5)
+
+	if player.inverter > 0:
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("inverter"), opponent, tempStates.Invert())
+		options[OPTION_INVERTER] = result
 
 	var liveChance = liveCount / float(liveCount + blankCount)
 	var blankChance = blankCount / float(liveCount + blankCount)
 
-	if magnifyingGlassResult == MAGNIFYING_BLANK:
+	if tempStates.magnifyingGlassResult == MAGNIFYING_BLANK:
 		liveChance = 0.0
 		blankChance = 1.0
-	elif magnifyingGlassResult == MAGNIFYING_LIVE:
+	elif tempStates.magnifyingGlassResult == MAGNIFYING_LIVE:
 		liveChance = 1.0
 		blankChance = 0.0
 
-	var damageToDeal = min(2 if usedHandsaw else 1, opponent.health)
+	var originalRemove = 1
+	var invertedRemove = 0
+	if tempStates.inverted:
+		var temp = liveChance
+		liveChance = blankChance
+		blankChance = temp
+		originalRemove = 0
+		invertedRemove = 1
 
-	if liveCount > 0 and magnifyingGlassResult != MAGNIFYING_BLANK:
-		var resultIfShootLife = Result.new(0,[0.0, 0.0],[0.0, 0.0],[0.0, 0.0],[0.0, 0.0])
-		var resultIfSelfShootLive = Result.new(0,[0.0, 0.0],[0.0, 0.0],[0.0, 0.0],[0.0, 0.0])
-		if handcuffState <= HANDCUFF_FREENEXT:
-			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent.use("health", damageToDeal), player)
-			if not usedHandsaw:
-				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, opponent, player.use("health", damageToDeal))
+	var damageToDeal = min(2 if tempStates.usedHandsaw else 1, opponent.health)
+
+	if liveChance > 0 and tempStates.magnifyingGlassResult != MAGNIFYING_BLANK:
+		var resultIfShootLife = Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
+		var resultIfSelfShootLive = Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
+		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
+			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", damageToDeal), player, TempStates.new())
+			if not tempStates.usedHandsaw:
+				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent, player.use("health", damageToDeal), TempStates.new())
 			resultIfShootLife = resultIfShootLife.clone()
 			resultIfSelfShootLive = resultIfSelfShootLive.clone()
 		else:
-			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player, opponent.use("health", damageToDeal), HANDCUFF_FREENEXT)
-			if not usedHandsaw:
-				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("health", damageToDeal), opponent, HANDCUFF_FREENEXT)
+			var newTempState = TempStates.new()
+			newTempState.handcuffState = HANDCUFF_FREENEXT
+			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player, opponent.use("health", damageToDeal), newTempState)
+			if not tempStates.usedHandsaw:
+				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player.use("health", damageToDeal), opponent, newTempState)
 
 		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootLife.mult(liveChance))
-		if not usedHandsaw:
+
+		if not tempStates.usedHandsaw:
 			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootLive.mult(liveChance))
 
 		if player.beer > 0:
-			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - 1, blankCount, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player.use("beer"), opponent, tempStates.SkipBullet())
 			options[OPTION_BEER].mutAdd(beerResult.mult(liveChance))
 
-	if blankCount > 0 and magnifyingGlassResult != MAGNIFYING_LIVE:
-		if not usedHandsaw:
-			var resultIfSelfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player, opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw and player.player_index != 0)
+	if blankChance > 0 and tempStates.magnifyingGlassResult != MAGNIFYING_LIVE:
+		if not tempStates.usedHandsaw:
+			var resultIfSelfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, tempStates.SkipBullet())
 			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))
 
-		if handcuffState <= HANDCUFF_FREENEXT:
-			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, opponent, player)
+		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
+			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, opponent, player, tempStates.new())
 			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
 		else:
-			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player, opponent, HANDCUFF_FREENEXT, MAGNIFYING_NONE, false)
+			var newTempState = TempStates.new()
+			newTempState.handcuffState = HANDCUFF_FREENEXT
+			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, newTempState)
 			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
 
 		if player.beer > 0:
-			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount - 1, liveCount_max, player.use("beer"), opponent, handcuffState, MAGNIFYING_NONE, usedHandsaw)
+			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player.use("beer"), opponent, tempStates.SkipBullet())
 			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
 
-	if printOptions:
+	if printOptions and isTopLayer:
 		print(options, " (", hash, ")")
 
 	var current: Result = null
 	var results: Array[Result] = []
 
 	for key in options:
-		if usedHandsaw and key == OPTION_SHOOT_SELF:
+		if tempStates.usedHandsaw and key == OPTION_SHOOT_SELF:
 			# Disallow this for now
 			continue
 

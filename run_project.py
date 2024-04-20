@@ -18,7 +18,7 @@ def main():
 
     # Run the executable
     executable_path = os.path.join(current_directory, "..", "..", "Buckshot Roulette.exe")
-    subprocess.Popen(executable_path)
+    subprocess.call(executable_path)
 
 if __name__ == "__main__":
     main()

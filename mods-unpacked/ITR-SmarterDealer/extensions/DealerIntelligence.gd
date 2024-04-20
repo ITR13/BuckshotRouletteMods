@@ -2,6 +2,36 @@ extends "res://scripts/DealerIntelligence.gd"
 
 const Bruteforce = preload("res://mods-unpacked/ITR-SmarterDealer/bruteforce.gd") 
 
+var thread_semaphore: Semaphore
+var main_semaphore: Semaphore
+var thread: Thread
+var keep_thread_alive := true
+var thread_isPlayer := false
+var thread_overrideShell := ""
+var thread_choice := Bruteforce.OPTION_NONE
+
+func _ready():
+	thread_semaphore = Semaphore.new()
+	main_semaphore = Semaphore.new()
+	keep_thread_alive = true
+
+	thread = Thread.new()
+	thread.start(_thread_function)
+
+func _exit_tree():
+	keep_thread_alive = false
+	thread_semaphore.post()
+
+func _thread_function():
+	while keep_thread_alive:
+		thread_semaphore.wait()
+		if not keep_thread_alive:
+			break
+
+		thread_choice = Bruteforce.OPTION_NONE
+		thread_choice = AlternativeChoice(thread_isPlayer, thread_overrideShell)
+		main_semaphore.post()
+
 var prevBatchIndex = -1
 var prevWonRounds = -1
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
@@ -93,14 +123,14 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		if overrideShell == "live":
 			shell = Bruteforce.MAGNIFYING_LIVE
 		elif overrideShell == "blank":
-			shell = Bruteforce.MAGNIFYING_BLANK		
+			shell = Bruteforce.MAGNIFYING_BLANK
 	else:
 		if knownShell == "live":
 			shell = Bruteforce.MAGNIFYING_LIVE
 		elif knownShell == "blank":
 			shell = Bruteforce.MAGNIFYING_BLANK
 
-	var playerHandcuffState = Bruteforce.HANDCUFF_NONE 
+	var playerHandcuffState = Bruteforce.HANDCUFF_NONE
 	if isPlayer:
 		if roundManager.dealerCuffed:
 			if dealerAboutToBreakFree:
@@ -135,9 +165,9 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 var commentDelay = 3
 func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 	var texts: Array
-	
+
 	commentDelay -= 1
-	
+
 	if playerDeathChance >= 0.65:
 		texts = [
 			"say hello to god",
@@ -215,7 +245,15 @@ func DealerChoice()->void:
 		await(roundManager.defibCutter.CutWire(roundManager.wireToCut))
 	if roundManager.playerCuffed:
 		await get_tree().create_timer(1.5, false).timeout
-	var choice = AlternativeChoice();
+
+	thread_isPlayer = false
+	thread_overrideShell = ""
+	thread_semaphore.post()
+
+	while not main_semaphore.try_wait():
+		await get_tree().process_frame
+
+	var choice = thread_choice;
 	var dealerWantsToUse = ""
 	dealerTarget = ""
 

@@ -5,7 +5,7 @@ extends Control
 
 var mod_dir_path := ""
 
-const ShellSpawner = preload("res://scripts/ShellSpawner.gd") 
+const ShellSpawner = preload("res://scripts/ShellSpawner.gd")
 var shellSpawner: Node = null
 
 var searchTimer: float = 0.1
@@ -22,8 +22,12 @@ func MaybeFindShellSpawner(dt: float) -> void:
 	if searchTimer > 0:
 		return
 	searchTimer += 1
-	
-	shellSpawner = get_tree().get_root().get_node_or_null("main/standalone managers/shell spawner")
+
+	var tree = get_tree()
+	if tree.current_scene.name != "main":
+		return
+
+	shellSpawner = tree.get_root().get_node_or_null("main/standalone managers/shell spawner")
 	pastSequenceArrayLength = 8
 	for liveIndex in shownLive.size():
 		shownLive[liveIndex].visible = false
@@ -33,7 +37,7 @@ func MaybeFindShellSpawner(dt: float) -> void:
 func MaybeUpdateShells() -> void:
 	if pastSequenceArrayLength == len(shellSpawner.sequenceArray):
 		return
-	
+
 	pastSequenceArrayLength = len(shellSpawner.sequenceArray)
 
 	var live = 0
@@ -43,9 +47,9 @@ func MaybeUpdateShells() -> void:
 			live += 1
 		elif shell == "blank":
 			blank += 1
-	
+
 	for liveIndex in shownLive.size():
 		shownLive[liveIndex].visible = liveIndex < live
 	for blankIndex in shownBlank.size():
 		shownBlank[blankIndex].visible = blankIndex < blank
-	
+

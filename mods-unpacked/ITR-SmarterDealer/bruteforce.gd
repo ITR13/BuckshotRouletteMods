@@ -360,7 +360,7 @@ static var cache = {}
 static func GetBestChoiceAndDamage(roundType: int, liveCount: int, blankCount: int, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates):
 	var liveCountMax := liveCount
 	if cachedGame != null:
-		var subPlayers: Array[BruteforcePlayer] = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
+		var subPlayers = cachedGame.CreateSubPlayers(liveCount, blankCount, player, opponent)
 		if subPlayers != null:
 			player = subPlayers[0]
 			opponent = subPlayers[1]

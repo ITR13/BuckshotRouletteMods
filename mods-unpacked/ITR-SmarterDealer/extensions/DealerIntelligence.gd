@@ -40,6 +40,7 @@ func createPlayer(player_index, itemArray):
 	var handsaw = 0
 	var medicine = 0
 	var inverters = 0
+	var burners = 0
 
 	for item in itemArray:
 		if (item == "magnifying glass"):
@@ -56,11 +57,13 @@ func createPlayer(player_index, itemArray):
 			medicine += 1
 		elif (item == "inverter"):
 			inverters += 1
+		elif (item == "burner"):
+			burners += 1
 
 	return Bruteforce.BruteforcePlayer.new(
 		player_index,
 		roundManager.roundArray[0].startingHealth,
-		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine, inverters
+		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine, inverters, burners
 	)
 
 
@@ -77,11 +80,19 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 
 	var liveCount = 0
 	var blankCount = 0
-	for shell in shellSpawner.sequenceArray:
+
+	var liveUnknown = 0
+	var blankUnknown = 0
+	for index in range(shellSpawner.sequenceArray.size()):
+		var shell = shellSpawner.sequenceArray[index]
 		if shell == "live":
 			liveCount += 1
+			if not sequenceArray_knownShell[index]:
+				liveUnknown += 1
 		else:
 			blankCount += 1
+			if not sequenceArray_knownShell[index]:
+				blankUnknown += 1
 
 	var roundType = Bruteforce.ROUNDTYPE_NORMAL
 	if roundManager.defibCutterReady && !roundManager.endless:
@@ -108,7 +119,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 		elif overrideShell == "blank":
 			shell = Bruteforce.MAGNIFYING_BLANK
 	else:
-		if dealerKnowsShell:
+		if dealerKnowsShell or sequenceArray_knownShell[0] or liveUnknown == 0 or blankUnknown == 0:
 			shell = Bruteforce.MAGNIFYING_LIVE if (shellSpawner.sequenceArray[0] == "live") != inverted_shell else Bruteforce.MAGNIFYING_BLANK
 
 	var playerHandcuffState = Bruteforce.HANDCUFF_NONE
@@ -273,9 +284,20 @@ func DealerChoice()->void:
 		roundManager.currentShotgunDamage = 2
 	elif choice == Bruteforce.OPTION_MEDICINE:
 		dealerWantsToUse = "expired medicine"
+		usingMedicine = true
 	elif choice == Bruteforce.OPTION_INVERTER:
 		dealerWantsToUse = "inverter"
 		inverted_shell = true
+		if roundManager.shellSpawner.sequenceArray[0] == "live":
+			roundManager.shellSpawner.sequenceArray[0] = "blank"
+		else:
+			roundManager.shellSpawner.sequenceArray[0] = "live"
+	elif choice == Bruteforce.OPTION_BURNER:
+		var sequence  = roundManager.shellSpawner.sequenceArray
+		var len = sequence.size()
+		var randindex =  randi_range(1, len - 1)
+		if(randindex == 8): randindex -= 1
+		sequenceArray_knownShell[randindex] = true
 	else:
 		super()
 		return

@@ -21,8 +21,9 @@ const OPTION_HANDCUFFS = 6
 const OPTION_HANDSAW = 7
 const OPTION_MEDICINE = 8
 const OPTION_INVERTER = 9
+const OPTION_BURNER = 10
 
-const FREESLOTS_INDEX = 10
+const FREESLOTS_INDEX = 11
 
 const ROUNDTYPE_NORMAL = 0
 const ROUNDTYPE_WIRECUT = 1
@@ -31,14 +32,15 @@ const ROUNDTYPE_DOUBLEORNOTHING = 2
 const itemScoreArray = [
 	[], [], [], # Skip none, shoot self, shoot other
 	# 0    1    2    3    4    5    6     7    8
-	[ 0.0, 1.5, 3.0, 4.0, 4.5, 5.0, 6.5 , 6.8, 7.0  ], # Magnify
-	[ 0.0, 0.5, 1.0, 1.2, 1.2, 1.2, 1.2 , 1.2, 1.2  ], # Cigarette
-	[ 0.0, 1.0, 2.0, 3.0, 3.5, 4.0, 4.25, 4.5, 4.75 ], # Beer
-	[ 0.0, 1.2, 2.0, 2.5, 2.6, 2.7, 2.8 , 2.9, 3.0  ], # Handcuff
-	[ 0.0, 1.5, 2.6, 3.1, 3.5, 3.6, 3.7 , 3.8, 3.9  ], # Handsaw
-	[ 0.0, 0.3, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0, 1.05 ], # Expired Medicine
-	[ 0.0, 1.2, 2.4, 3.3, 3.7, 4.1, 4.5 , 4.9, 5.4  ], # Inverter
-	[ 0.0, 1.0, 2.0, 2.6, 3.0, 3.0, 3.0 , 3.0, 3.0, ], # FreeSlots
+	[ 0.0, 1.5, 3.0, 4.0 , 4.5, 5.0 , 6.5 , 6.8, 7.0  ], # Magnify
+	[ 0.0, 0.5, 1.0, 1.2 , 1.2, 1.2 , 1.2 , 1.2, 1.2  ], # Cigarette
+	[ 0.0, 1.0, 2.0, 3.0 , 3.5, 4.0 , 4.25, 4.5, 4.75 ], # Beer
+	[ 0.0, 1.2, 2.0, 2.5 , 2.6, 2.7 , 2.8 , 2.9, 3.0  ], # Handcuff
+	[ 0.0, 1.5, 2.6, 3.1 , 3.5, 3.6 , 3.7 , 3.8, 3.9  ], # Handsaw
+	[ 0.0, 0.3, 0.6, 0.7 , 0.8, 0.9 , 0.95, 1.0, 1.05 ], # Expired Medicine
+	[ 0.0, 1.2, 2.4, 3.3 , 3.7, 4.1 , 4.5 , 4.9, 5.4  ], # Inverter
+	[ 0.0, 1.4, 2.8, 2.75, 2.7, 2.65, 2.6 , 2.5, 2.4  ], # Burner Phone
+	[ 0.0, 1.0, 2.0, 2.6 , 3.0, 3.0 , 3.0 , 3.0, 3.0, ], # FreeSlots
 ]
 
 class Result:
@@ -96,6 +98,7 @@ class BruteforcePlayer:
 	var max_handsaw: int
 	var max_medicine: int
 	var max_inverter: int
+	var max_burner: int
 
 	var magnify: int
 	var cigarettes: int
@@ -104,8 +107,9 @@ class BruteforcePlayer:
 	var handsaw: int
 	var medicine: int
 	var inverter: int
+	var burner: int
 
-	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw, max_medicine, max_inverter):
+	func _init(player_index, max_health, max_magnify, max_cigarettes, max_beer, max_handcuffs, max_handsaw, max_medicine, max_inverter, max_burner):
 		self.player_index = player_index
 
 		self.max_health = max_health
@@ -118,6 +122,7 @@ class BruteforcePlayer:
 		self.max_handsaw = max_handsaw
 		self.max_medicine = max_medicine
 		self.max_inverter = max_inverter
+		self.max_burner = max_burner
 
 		self.magnify = max_magnify
 		self.cigarettes = max_cigarettes
@@ -126,6 +131,7 @@ class BruteforcePlayer:
 		self.handsaw = max_handsaw
 		self.medicine = max_medicine
 		self.inverter = max_inverter
+		self.burner = max_burner
 
 	func hash(num):
 		num *= 2
@@ -155,10 +161,13 @@ class BruteforcePlayer:
 		num *= (self.max_inverter+1)
 		num += self.inverter
 
+		num *= (self.max_burner+1)
+		num += self.burner
+
 		return num
 
 	func use(item, count=1):
-		var new_player = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter)
+		var new_player = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter, self.max_burner)
 
 		# Copy attributes to the new instance
 		var found = false
@@ -179,20 +188,24 @@ class BruteforcePlayer:
 			return null
 		if other.max_health != self.max_health:
 			return null
-		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine or other.inverter > self.max_inverter:
+		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine or other.inverter > self.max_inverter or other.burner > self.max_burner:
 			return null
 
-		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter)
+		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter, self.max_burner)
 		copy.health = other.health
 		copy.magnify = other.magnify
 		copy.cigarettes = other.cigarettes
 		copy.beer = other.beer
 		copy.handcuffs = other.handcuffs
 		copy.handsaw = other.handsaw
+		copy.medicine = other.medicine
+		copy.inverter = other.inverter
+		copy.burner = other.burner
+		copy.luck = other.luck
 		return copy
 
 	func sum_items():
-		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs + self.medicine + self.inverter
+		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs + self.medicine + self.inverter + self.burner
 		var freeSlots = 8 - totalItems
 
 		# Player 0 can consume cigarettes next turn, so saving them makes you less likely to draw more cigarettes
@@ -205,6 +218,7 @@ class BruteforcePlayer:
 		score += itemScoreArray[OPTION_HANDCUFFS][self.handcuffs]
 		score += itemScoreArray[OPTION_MEDICINE][self.medicine]
 		score += itemScoreArray[OPTION_INVERTER][self.inverter]
+		score += itemScoreArray[OPTION_BURNER][self.burner]
 		score += itemScoreArray[FREESLOTS_INDEX][freeSlots]
 
 		return score
@@ -213,7 +227,7 @@ class BruteforcePlayer:
 		return JSON.stringify(self._to_dict())
 
 	func _to_dict():
-		return {
+		var dict = {
 			"player_index": self.player_index,
 			"health": self.health,
 			"max_health": self.max_health,
@@ -230,8 +244,14 @@ class BruteforcePlayer:
 			"medicine": self.medicine,
 			"max_medicine": self.max_medicine,
 			"inverter": self.inverter,
-			"max_inverter": self.max_inverter
+			"max_inverter": self.max_inverter,
+			"burner": self.burner,
+			"max_burner": self.max_burner
 		}
+		for key in dict.keys():
+			if dict[key] == 0:
+				dict.erase(key)
+		return dict
 
 class BruteforceGame:
 	var liveCount: int
@@ -540,7 +560,7 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if tempStates.magnifyingGlassResult == MAGNIFYING_NONE and player.magnify > 0 and (donLogic or (liveCount > 0 and blankCount > 0)):
 		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, tempStates.Magnify(MAGNIFYING_BLANK))
 		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("magnify"), opponent, tempStates.Magnify(MAGNIFYING_LIVE))
-		options[OPTION_MAGNIFY] = blankResult.mult(blankCount) 
+		options[OPTION_MAGNIFY] = blankResult.mult(blankCount)
 		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
 		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
 	elif donLogic and player.magnify > 0:
@@ -577,6 +597,24 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if player.inverter > 0:
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("inverter"), opponent, tempStates.Invert())
 		options[OPTION_INVERTER] = result
+
+	if player.burner > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE:
+		if (liveCount > 0 and blankCount > 0) and (liveCount == 1 or blankCount == 1):
+			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_BLANK))
+			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_LIVE))
+			var nonResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
+
+			var hitChance = 1.0 / (liveCount + blankCount)
+
+			options[OPTION_BURNER] = blankResult.mult(blankCount)
+			options[OPTION_BURNER].mutAdd(liveResult.mult(liveCount))
+			options[OPTION_BURNER] = options[OPTION_BURNER].mult(1.0/(blankCount + liveCount))
+			options[OPTION_BURNER] = options[OPTION_BURNER].mult(hitChance)
+			options[OPTION_BURNER].mutAdd(nonResult.mult(1-hitChance))
+		elif liveCount > 1 and blankCount > 1:
+			var nonResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
+			options[OPTION_BURNER] = nonResult
+
 
 	var liveChance = liveCount / float(liveCount + blankCount)
 	var blankChance = blankCount / float(liveCount + blankCount)
@@ -707,7 +745,7 @@ static func CompareCurrent(isPlayer0: bool, donLogic: bool, current: Result, oth
 		if comparison != 0:
 			return comparison
 		comparison = Compare(
-			current.deathChance[0], 
+			current.deathChance[0],
 			other.deathChance[0]
 		)
 		if comparison != 0:

@@ -41,6 +41,7 @@ func createPlayer(player_index, itemArray):
 	var medicine = 0
 	var inverters = 0
 	var burners = 0
+	var adrenaline = 0
 
 	for item in itemArray:
 		if (item == "magnifying glass"):
@@ -59,11 +60,13 @@ func createPlayer(player_index, itemArray):
 			inverters += 1
 		elif (item == "burner"):
 			burners += 1
+		elif (item == "adrenaline"):
+			adrenaline += 1
 
 	return Bruteforce.BruteforcePlayer.new(
 		player_index,
 		roundManager.roundArray[0].startingHealth,
-		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine, inverters, burners
+		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine, inverters, burners, adrenaline
 	)
 
 

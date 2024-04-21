@@ -587,6 +587,8 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 	if player.medicine > 0:
 		var goodMedicine = player.use("medicine")
 		goodMedicine.health += 2
+		if goodMedicine.health > goodMedicine.max_health:
+			goodMedicine.health = goodMedicine.max_health
 		var badMedicine = player.use("medicine")
 		badMedicine.health -= 1
 		var goodResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, opponent, tempStates)

@@ -600,17 +600,13 @@ static func GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, li
 
 	if player.burner > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE:
 		if (liveCount > 0 and blankCount > 0) and (liveCount == 1 or blankCount == 1):
-			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_BLANK))
-			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_LIVE))
-			var nonResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
+			var hitResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_BLANK)) if liveCount == 1 else GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_LIVE))
+			var hitChance = 1.0 / (liveCount + blankCount) if liveCount + blankCount > 2 else 1.0
 
-			var hitChance = 1.0 / (liveCount + blankCount)
-
-			options[OPTION_BURNER] = blankResult.mult(blankCount)
-			options[OPTION_BURNER].mutAdd(liveResult.mult(liveCount))
-			options[OPTION_BURNER] = options[OPTION_BURNER].mult(1.0/(blankCount + liveCount))
-			options[OPTION_BURNER] = options[OPTION_BURNER].mult(hitChance)
-			options[OPTION_BURNER].mutAdd(nonResult.mult(1-hitChance))
+			options[OPTION_BURNER] = hitResult.mult(hitChance)
+			if hitChance < 1.0:
+				var nonResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
+				options[OPTION_BURNER].mutAdd(nonResult.mult(1-hitChance))
 		elif liveCount > 1 and blankCount > 1:
 			var nonResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
 			options[OPTION_BURNER] = nonResult

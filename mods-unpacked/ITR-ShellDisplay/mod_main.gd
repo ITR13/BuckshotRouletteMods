@@ -22,5 +22,3 @@ func _ready() -> void:
 	var shell_display_prefab = load("res://mods-unpacked/ITR-ShellDisplay/shell_display.tscn")
 	shell_display = shell_display_prefab.instantiate()
 	add_child(shell_display)
-
-	|1

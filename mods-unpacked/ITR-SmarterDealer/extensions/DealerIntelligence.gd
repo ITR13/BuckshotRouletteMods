@@ -73,6 +73,7 @@ func createPlayer(player_index, itemArray):
 var prevBatchIndex = -1
 var prevWonRounds = -1
 var inverted_shell = false
+var adrenaline = false
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if (shellSpawner.sequenceArray.size() == 0):
 		return Bruteforce.OPTION_NONE
@@ -144,7 +145,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	tempStates.handcuffState = playerHandcuffState
 	tempStates.magnifyingGlassResult = shell
 	tempStates.usedHandsaw = roundManager.barrelSawedOff
-
+	tempStates.adrenaline = adrenaline
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
@@ -300,6 +301,9 @@ func DealerChoice()->void:
 		var randindex =  randi_range(1, len - 1)
 		if(randindex == 8): randindex -= 1
 		sequenceArray_knownShell[randindex] = true
+	elif choice == Bruteforce.OPTION_ADRENALINE:
+		adrenaline = true
+		dealerWantsToUse = "adrenaline"
 	else:
 		super()
 		return
@@ -324,16 +328,22 @@ func DealerChoice()->void:
 			medicine.dealerDying = dying
 			returning = true
 
-		for res in amounts.array_amounts:
-			if (dealerWantsToUse == res.itemName):
-				res.amount_dealer -= 1
-				break
+		if not adrenaline or dealerWantsToUse == "adrenaline":
+			for res in amounts.array_amounts:
+				if (dealerWantsToUse == res.itemName):
+					res.amount_dealer -= 1
+					break
 
-		await(hands.PickupItemFromTable(dealerWantsToUse))
-		#if (dealerWantsToUse == "handcuffs"): await get_tree().create_timer(.8, false).timeout #additional delay for initial player handcuff check (continues outside animation)
-		if (dealerWantsToUse == "cigarettes"): await get_tree().create_timer(1.1, false).timeout #additional delay for health update routine (called in animator. continues outside animation)
-		itemManager.itemArray_dealer.erase(dealerWantsToUse)
-		itemManager.numberOfItemsGrabbed_enemy -= 1
+			await(hands.PickupItemFromTable(dealerWantsToUse))
+			#if (dealerWantsToUse == "handcuffs"): await get_tree().create_timer(.8, false).timeout #additional delay for initial player handcuff check (continues outside animation)
+			if (dealerWantsToUse == "cigarettes"): await get_tree().create_timer(1.1, false).timeout #additional delay for health update routine (called in animator. continues outside animation)
+			itemManager.itemArray_dealer.erase(dealerWantsToUse)
+			itemManager.numberOfItemsGrabbed_enemy -= 1
+		else:
+			adrenaline = false
+			hands.stealing = true
+			await(hands.PickupItemFromTable(dealerWantsToUse))
+
 		if (returning): return
 		DealerChoice()
 		return

@@ -562,6 +562,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 		var shellChance = 1.0/7.0
 		var result = Result.new(OPTION_NONE, [0.0, 0.0], [playerDeathChance * shellChance, sum_array(dealerDeathChance) * shellChance], health, itemscore)
+
 		cache[ahash] = result
 
 		return result
@@ -705,7 +706,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	else:
 		beerPlayer = beerPlayer.use("beer")
 
-	if liveChance > 0 and tempStates.magnifyingGlassResult != MAGNIFYING_BLANK:
+	if liveChance > 0:
 		var resultIfShootLife := Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
 		var resultIfSelfShootLive := Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
 		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
@@ -730,7 +731,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
 			options[OPTION_BEER].mutAdd(beerResult.mult(liveChance))
 
-	if blankChance > 0 and tempStates.magnifyingGlassResult != MAGNIFYING_LIVE:
+	if blankChance > 0:
 		if not tempStates.usedHandsaw:
 			var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, tempStates.SkipBullet())
 			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))

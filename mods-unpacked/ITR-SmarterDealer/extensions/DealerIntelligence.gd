@@ -88,7 +88,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var blankUnknown = 0
 	for index in range(shellSpawner.sequenceArray.size()):
 		var shell = shellSpawner.sequenceArray[index]
-		if shell == "live":
+		if (shell == "live") != (index == 0 and inverted_shell):
 			liveCount += 1
 			if not sequenceArray_knownShell[index]:
 				liveUnknown += 1

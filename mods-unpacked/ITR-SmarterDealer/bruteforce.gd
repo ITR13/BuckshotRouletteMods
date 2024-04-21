@@ -642,7 +642,8 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	if itemFrom.beer > 0:
 		options[OPTION_BEER] = Result.new(OPTION_BEER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
-	if player.medicine > 0 and not tempStates.adrenaline:
+	# Dealer isn't allowed to eat medicine on 1 health left... for some reason
+	if player.medicine > 0 and not tempStates.adrenaline and (player.player_index == 0 or player.health > 1):
 		var goodMedicine := player.use("medicine")
 		goodMedicine.health += 2
 		if goodMedicine.health > goodMedicine.max_health:

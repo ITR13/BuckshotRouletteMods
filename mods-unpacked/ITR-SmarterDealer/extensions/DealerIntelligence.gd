@@ -143,7 +143,6 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	tempStates.usedHandsaw = roundManager.barrelSawedOff
 
 
-	print("Calling GetBestChoiceAndDamage")
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
 		roundType,

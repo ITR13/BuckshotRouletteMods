@@ -376,7 +376,7 @@ static func GetBestChoiceAndDamage(roundType, liveCount, blankCount, player: Bru
 	else:
 		roundString = "DoN"
 
-	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s, %s, %s" % [roundString, liveCount, blankCount, player, opponent, tempStates], "ITR-SmarterDealer")
+	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s" % [roundString, liveCount, blankCount, player, opponent, tempStates], "ITR-SmarterDealer")
 
 	var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, tempStates, true)
 	return result

@@ -302,7 +302,7 @@ func DealerChoice()->void:
 		return
 
 	# use item
-	if (dealerWantsToUse != ""): 
+	if (dealerWantsToUse != ""):
 		if (dealerHoldingShotgun):
 			animator_shotgun.play("enemy put down shotgun")
 			shellLoader.DealerHandsDropShotgun()
@@ -312,11 +312,26 @@ func DealerChoice()->void:
 		if (roundManager.waitingForDealerReturn):
 			await get_tree().create_timer(1.8, false).timeout
 			roundManager.waitingForDealerReturn = false
+
+		# Medicine
+		var returning = false
+		if (dealerWantsToUse == "expired medicine"):
+			var medicine_outcome = randf_range(0.0, 1.0)
+			var dying = medicine_outcome >= .5
+			medicine.dealerDying = dying
+			returning = true
+
+		for res in amounts.array_amounts:
+			if (dealerWantsToUse == res.itemName):
+				res.amount_dealer -= 1
+				break
+
 		await(hands.PickupItemFromTable(dealerWantsToUse))
 		#if (dealerWantsToUse == "handcuffs"): await get_tree().create_timer(.8, false).timeout #additional delay for initial player handcuff check (continues outside animation)
-		if (dealerWantsToUse == "cigarettes"): await get_tree().create_timer(1.1, false).timeout #additional delay for health update routine (called in aninator. continues outside animation)
+		if (dealerWantsToUse == "cigarettes"): await get_tree().create_timer(1.1, false).timeout #additional delay for health update routine (called in animator. continues outside animation)
 		itemManager.itemArray_dealer.erase(dealerWantsToUse)
 		itemManager.numberOfItemsGrabbed_enemy -= 1
+		if (returning): return
 		DealerChoice()
 		return
 

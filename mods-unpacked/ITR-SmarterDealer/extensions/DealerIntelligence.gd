@@ -248,7 +248,7 @@ func DealerChoice()->void:
 		await(roundManager.defibCutter.CutWire(roundManager.wireToCut))
 	if adrenaline:
 		await get_tree().create_timer(0.5, false).timeout
-	if roundManager.playerCuffed:
+	elif roundManager.playerCuffed:
 		await get_tree().create_timer(1.5, false).timeout
 
 	thread_isPlayer = false

@@ -245,6 +245,8 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 func DealerChoice()->void:
 	if (roundManager.requestedWireCut):
 		await(roundManager.defibCutter.CutWire(roundManager.wireToCut))
+	if adrenaline:
+		await get_tree().create_timer(0.5, false).timeout
 	if roundManager.playerCuffed:
 		await get_tree().create_timer(1.5, false).timeout
 

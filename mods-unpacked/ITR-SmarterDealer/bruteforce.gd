@@ -624,7 +624,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 		options[OPTION_HANDSAW] = result
 
-	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify > 0 and liveCount > 0 and blankCount > 0) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0):
+	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify > 0 and liveCount > 0 and blankCount > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0):
 		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 		# Safety, it might return false if the stuff above wasn't done correctly
 		if result:
@@ -752,6 +752,12 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 	if printOptions and isTopLayer:
 		print(options, " (", ahash, ")")
+
+	if options.has(OPTION_ADRENALINE) and options[OPTION_ADRENALINE].deathChance[0] == -100:
+		print(options)
+		print(player)
+		print(opponent)
+		print(tempStates)
 
 	var current: Result = null
 	var results: Array[Result] = []

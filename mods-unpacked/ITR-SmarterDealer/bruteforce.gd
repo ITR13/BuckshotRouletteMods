@@ -212,7 +212,7 @@ class BruteforcePlayer:
 		copy.medicine = other.medicine
 		copy.inverter = other.inverter
 		copy.burner = other.burner
-		copy.luck = other.luck
+		copy.adrenaline = other.adrenaline
 		return copy
 
 	func sum_items()->int:
@@ -783,6 +783,16 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 		current = option
 		results = [current]
+
+	if results.size() <= 0:
+		print("Oops! Bad pathing! Probably adrenaline's fault again!")
+		results = [Result.new(
+			OPTION_NONE,
+			[-100, 100],
+			[-100, 100],
+			[100, -100],
+			[100, -100]
+		)]
 
 	if results.size() <= 1:
 		cache[ahash] = results[0]

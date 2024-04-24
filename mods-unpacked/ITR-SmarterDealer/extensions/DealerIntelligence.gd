@@ -111,7 +111,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var dealer = createPlayer(1, itemManager.itemArray_dealer)
 	dealer.health = roundManager.health_opponent
 
-	if roundType != roundType.ROUNDTYPE_DOUBLEORNOTHING:
+	if roundType != Bruteforce.ROUNDTYPE_DOUBLEORNOTHING:
 		var check = player if isPlayer else dealer
 		if check.cigarettes > 0 and check.health > check.max_health:
 			return Bruteforce.OPTION_CIGARETTES
@@ -156,9 +156,10 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	)
 	ModLoaderLog.info("%s" % result, "ITR-SmarterDealer")
 
-	if prevWonRounds != roundManager.wonRounds:
-		prevWonRounds = roundManager.wonRounds
-		CommentOnChance(result.deathChance[0], result.deathChance[1])
+	# Disabled until I figure out how A: roundManager.wonRounds doesn't exist, and B: How the code works in spite of this
+	# if prevWonRounds != roundManager.wonRounds:
+	# 	prevWonRounds = roundManager.wonRounds
+	# 	CommentOnChance(result.deathChance[0], result.deathChance[1])
 
 	# Return the result, you might want to handle the result accordingly
 	return result.option
@@ -340,9 +341,22 @@ func DealerChoice()->void:
 			itemManager.itemArray_dealer.erase(dealerWantsToUse)
 			itemManager.numberOfItemsGrabbed_enemy -= 1
 		else:
+			# I don't understand what this code does, but we need to add an item to itemManager.itemArray_instances_dealer
+			var ch = itemManager.itemSpawnParent.get_children()
+			for c in ch.size():
+				if(ch[c].get_child(0) is PickupIndicator):
+					var temp_indicator : PickupIndicator = ch[c].get_child(0)
+					var temp_interaction : InteractionBranch = ch[c].get_child(1)
+					if (ch[c].transform.origin.z > 0): temp_indicator.whichSide = "right"
+					else: temp_indicator.whichSide= "left"
+					if (temp_interaction.isPlayerSide):
+						itemManager.itemArray_instances_dealer.append(ch[c])
+						inv_playerside.append(temp_interaction.itemName)
+
 			adrenaline = false
 			hands.stealing = true
 			await(hands.PickupItemFromTable(dealerWantsToUse))
+			await get_tree().create_timer(1.1, false).timeout
 
 		if (returning): return
 		DealerChoice()

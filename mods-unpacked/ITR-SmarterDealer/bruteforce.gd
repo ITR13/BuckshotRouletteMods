@@ -313,6 +313,8 @@ class TempStates:
 	var usedHandsaw := false
 	var inverted := false
 	var adrenaline := false
+	var futureLive := 0
+	var futureBlank := 0
 
 	func clone()->TempStates:
 		var other: TempStates = TempStates.new()
@@ -321,6 +323,8 @@ class TempStates:
 		other.usedHandsaw = self.usedHandsaw
 		other.inverted = self.inverted
 		other.adrenaline = self.adrenaline
+		other.futureLive = self.futureLive
+		other.futureBlank = self.futureBlank
 		return other
 
 	func Cuff()->TempStates:
@@ -357,6 +361,8 @@ class TempStates:
 		other.inverted = false
 		other.magnifyingGlassResult = MAGNIFYING_NONE
 		other.adrenaline = false
+		other.futureLive = 0
+		other.futureBlank = 0
 		return other
 
 	func do_hash(num: int)->int:
@@ -591,29 +597,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Cuff())
 		options[OPTION_HANDCUFFS] = result
 
-	if tempStates.magnifyingGlassResult == MAGNIFYING_NONE and itemFrom.magnify > 0 and (donLogic or (liveCount > 0 and blankCount > 0)):
-		var a = player
-		var b = opponent
-		if tempStates.adrenaline:
-			b = b.use("magnify")
-		else:
-			a = a.use("magnify")
-		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
-		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
-		options[OPTION_MAGNIFY] = blankResult.mult(blankCount)
-		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveCount))
-		options[OPTION_MAGNIFY] = options[OPTION_MAGNIFY].mult(1.0/(blankCount + liveCount))
-	elif donLogic and itemFrom.magnify > 0:
-		var a = player
-		var b = opponent
-		if tempStates.adrenaline:
-			b = b.use("magnify")
-		else:
-			a = a.use("magnify")
-		# Allow wasting magnifying glasses, though you literally never want to do this
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
-		options[OPTION_MAGNIFY] = result
-
 	if not tempStates.usedHandsaw and itemFrom.handsaw > 0 and (donLogic or liveCount > 0):
 		var a = player
 		var b = opponent
@@ -623,12 +606,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			a = a.use("handsaw")
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 		options[OPTION_HANDSAW] = result
-
-	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify > 0 and liveCount > 0 and blankCount > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0):
-		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
-		# Safety, it might return false if the stuff above wasn't done correctly
-		if result:
-			options[OPTION_ADRENALINE] = result
 
 	if donLogic and not tempStates.adrenaline and player.cigarettes > 0:
 		# On double or nothing rounds you might want to waste cigarettes to have them carry over to the next round
@@ -665,22 +642,8 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Invert())
 		options[OPTION_INVERTER] = result
 
-	if player.burner > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE:
-		if (liveCount > 0 and blankCount > 0) and (liveCount == 1 or blankCount == 1):
-			var hitResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_BLANK)) if liveCount == 1 else GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates.Magnify(MAGNIFYING_LIVE))
-			var hitChance = 1.0 / (liveCount + blankCount) if liveCount + blankCount > 2 else 1.0
-
-			options[OPTION_BURNER] = hitResult.mult(hitChance)
-			if hitChance < 1.0:
-				var nonResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
-				options[OPTION_BURNER].mutAdd(nonResult.mult(1-hitChance))
-		elif liveCount > 1 and blankCount > 1:
-			var nonResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("burner"), opponent, tempStates)
-			options[OPTION_BURNER] = nonResult
-
-
-	var liveChance := liveCount / float(liveCount + blankCount)
-	var blankChance := blankCount / float(liveCount + blankCount)
+	var liveChance := 0.0
+	var blankChance := 0.0
 
 	if tempStates.magnifyingGlassResult == MAGNIFYING_BLANK:
 		liveChance = 0.0
@@ -688,6 +651,72 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	elif tempStates.magnifyingGlassResult == MAGNIFYING_LIVE:
 		liveChance = 1.0
 		blankChance = 0.0
+	else:
+		var total := float(liveCount + blankCount - tempStates.futureLive - tempStates.futureBlank)
+		liveChance = (liveCount-tempStates.futureLive) / total
+		blankChance = (blankCount-tempStates.futureBlank) / total
+
+
+	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify+opponent.burner > 0 and liveChance > 0 and blankChance > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0):
+		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
+		# Safety, it might return false if the stuff above wasn't done correctly
+		if result:
+			options[OPTION_ADRENALINE] = result
+
+
+	if tempStates.magnifyingGlassResult == MAGNIFYING_NONE and itemFrom.magnify > 0 and (liveChance > 0 and blankChance > 0):
+		var a = player
+		var b = opponent
+		if tempStates.adrenaline:
+			b = b.use("magnify")
+		else:
+			a = a.use("magnify")
+		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
+		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
+		options[OPTION_MAGNIFY] = blankResult.mult(blankChance)
+		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveChance))
+	elif donLogic and itemFrom.magnify > 0:
+		var a = player
+		var b = opponent
+		if tempStates.adrenaline:
+			b = b.use("magnify")
+		else:
+			a = a.use("magnify")
+		# Allow wasting magnifying glasses, though you literally never want to do this
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
+		options[OPTION_MAGNIFY] = result
+
+
+	if itemFrom.burner > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE and liveChance > 0 and blankChance > 0:
+		var a = player
+		var b = opponent
+		if tempStates.adrenaline:
+			b = b.use("burner")
+		else:
+			a = a.use("burner")
+
+		# There are 4 possible scenarios:
+		# Hit an unseen live (live - futureLive) / total
+		# Hit an unseen blank (blank - futureBlank) / total
+		# Hit an already seen live (futureLive / total)
+		# Hit an already seen blank (futureBlank / total)
+
+		var bTotal := float(blankCount+liveCount)
+		var bMissChance := (tempStates.futureBlank+tempStates.futureLive) / bTotal
+		var bLiveChance := (liveCount - tempStates.futureLive) / bTotal
+		var bBlankChance := (blankCount - tempStates.futureBlank) / bTotal
+
+		options[OPTION_BURNER] = Result.new(OPTION_BURNER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+
+		if bMissChance > 0:
+			var missResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
+			options[OPTION_BURNER].mutAdd(missResult.mult(bMissChance))
+		if bLiveChance > 0:
+			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 1))
+			options[OPTION_BURNER].mutAdd(liveResult.mult(bLiveChance))
+		if bBlankChance > 0:
+			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
+			options[OPTION_BURNER].mutAdd(blankResult.mult(bBlankChance))
 
 	var originalRemove := 1
 	var invertedRemove := 0

@@ -146,6 +146,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	tempStates.magnifyingGlassResult = shell
 	tempStates.usedHandsaw = roundManager.barrelSawedOff
 	tempStates.adrenaline = adrenaline
+	tempStates.inverted = inverted_shell
 
 	# Call the static function with the required arguments
 	var result = Bruteforce.GetBestChoiceAndDamage(
@@ -293,7 +294,7 @@ func DealerChoice()->void:
 		usingMedicine = true
 	elif choice == Bruteforce.OPTION_INVERTER:
 		dealerWantsToUse = "inverter"
-		inverted_shell = true
+		inverted_shell = !inverted_shell
 		if roundManager.shellSpawner.sequenceArray[0] == "live":
 			roundManager.shellSpawner.sequenceArray[0] = "blank"
 		else:
@@ -352,8 +353,8 @@ func DealerChoice()->void:
 					if (ch[c].transform.origin.z > 0): temp_indicator.whichSide = "right"
 					else: temp_indicator.whichSide= "left"
 					if (temp_interaction.isPlayerSide):
-						itemManager.itemArray_instances_dealer.append(ch[c])
-						inv_playerside.append(temp_interaction.itemName)
+						itemManager.itemArray_instances_dealer.insert(0, ch[c])
+						inv_playerside.insert(0, temp_interaction.itemName)
 
 			adrenaline = false
 			hands.stealing = true

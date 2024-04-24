@@ -343,6 +343,7 @@ func DealerChoice()->void:
 			if (dealerWantsToUse == "cigarettes"): await get_tree().create_timer(1.1, false).timeout #additional delay for health update routine (called in animator. continues outside animation)
 			itemManager.itemArray_dealer.erase(dealerWantsToUse)
 			itemManager.numberOfItemsGrabbed_enemy -= 1
+			print("Dealer uses "+dealerWantsToUse)
 		else:
 			# I don't understand what this code does, but we need to add an item to itemManager.itemArray_instances_dealer
 			var ch = itemManager.itemSpawnParent.get_children()
@@ -360,6 +361,7 @@ func DealerChoice()->void:
 			hands.stealing = true
 			await(hands.PickupItemFromTable(dealerWantsToUse))
 			await get_tree().create_timer(1.1, false).timeout
+			print("Dealer steals "+dealerWantsToUse)
 
 		if (returning): return
 		DealerChoice()
@@ -372,6 +374,7 @@ func DealerChoice()->void:
 		GrabShotgun()
 		await get_tree().create_timer(1.4 + .5 - 1, false).timeout
 	await get_tree().create_timer(1, false).timeout
+	print("Dealer shoots "+dealerTarget)
 	Shoot(dealerTarget)
 	dealerTarget = ""
 	knownShell = ""

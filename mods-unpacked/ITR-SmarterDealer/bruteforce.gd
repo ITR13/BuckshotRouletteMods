@@ -372,6 +372,12 @@ class TempStates:
 		other.adrenaline = false
 		return other
 
+	func Cigarettes()->TempStates:
+		var other: TempStates = self.clone()
+		other.adrenaline = false
+		return other
+
+
 	func do_hash(num: int, liveCount_max: int)->int:
 		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 4
 		if self.usedHandsaw:
@@ -621,13 +627,14 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 		options[OPTION_HANDSAW] = result
 
-	if donLogic and not tempStates.adrenaline and player.cigarettes > 0:
+	if itemFrom.cigarettes > 0 and (player.health < player.max_health or donLogic):
 		# On double or nothing rounds you might want to waste cigarettes to have them carry over to the next round
 		# Technically you might want this even on regular rounds, but it makes the logic messy. Same reason for don-checks above
-		var healedPlayer := player.use("cigarettes")
+		var healedPlayer := player.use("cigarettes", 0 if tempStates.adrenaline else 1)
+		var healedOpponent := opponent.use("cigarettes", 1 if tempStates.adrenaline else 0)
 		if healedPlayer.health < healedPlayer.max_health:
 			healedPlayer.health += 1
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, healedPlayer, opponent, tempStates)
+		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, healedPlayer, healedOpponent, tempStates.Cigarettes())
 		options[OPTION_CIGARETTES] = result
 
 	if itemFrom.beer > 0:
@@ -679,7 +686,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		originalRemove = 0
 		invertedRemove = 1
 
-	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify+opponent.burner > 0 and liveChance > 0 and blankChance > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0):
+	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify+opponent.burner > 0 and liveChance > 0 and blankChance > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0 or (opponent.cigarettes > 0 and player.health <= 2 and player.max_health > player.health)):
 		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 		# Safety, it might return false if the stuff above wasn't done correctly
 		if result:

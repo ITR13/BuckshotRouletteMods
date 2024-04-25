@@ -216,7 +216,7 @@ class BruteforcePlayer:
 		return copy
 
 	func sum_items()->int:
-		var totalItems = self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs + self.medicine + self.inverter + self.burner + self.adrenaline
+		var totalItems = self.count_items()
 		var freeSlots = 8 - totalItems
 
 		# Player 0 can consume cigarettes next turn, so saving them makes you less likely to draw more cigarettes
@@ -234,6 +234,9 @@ class BruteforcePlayer:
 		score += itemScoreArray[FREESLOTS_INDEX][freeSlots]
 
 		return score
+
+	func count_items()->int:
+		return self.magnify + self.beer + self.cigarettes + self.handsaw + self.handcuffs + self.medicine + self.inverter + self.burner + self.adrenaline
 
 	func _to_string():
 		return JSON.stringify(self._to_dict())

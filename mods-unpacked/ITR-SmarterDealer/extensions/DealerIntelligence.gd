@@ -111,10 +111,22 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var dealer = createPlayer(1, itemManager.itemArray_dealer)
 	dealer.health = roundManager.health_opponent
 
-	if roundType != Bruteforce.ROUNDTYPE_DOUBLEORNOTHING:
+	var itemsInPlay = player.count_items() + dealer.count_items()
+	var totalShells = shellSpawner.sequenceArray.size()
+
+	# Some probably dumb plays to prevent the AI from spending ages thinking
+	if itemsInPlay >= 12 and totalShells > 4:
 		var check = player if isPlayer else dealer
-		if check.cigarettes > 0 and check.health > check.max_health:
+
+		if check.burner > 0:
+			return Bruteforce.OPTION_BURNER
+
+		if check.cigarettes > 0 and check.health < check.max_health:
 			return Bruteforce.OPTION_CIGARETTES
+
+		if check.beer > 0:
+			return Bruteforce.OPTION_BEER
+
 
 	var shell = Bruteforce.MAGNIFYING_NONE
 	if overrideShell:

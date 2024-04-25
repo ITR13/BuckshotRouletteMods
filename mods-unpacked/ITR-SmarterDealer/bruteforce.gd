@@ -369,6 +369,7 @@ class TempStates:
 		var other: TempStates = self.clone()
 		other.futureLive += live
 		other.futureBlank += blank
+		other.adrenaline = false
 		return other
 
 	func do_hash(num: int, liveCount_max: int)->int:
@@ -393,7 +394,9 @@ class TempStates:
 			"MagnifyingGlassResult": self.magnifyingGlassResult,
 			"UsedHandsaw": self.usedHandsaw,
 			"Inverted": self.inverted,
-			"Adrenaline": self.adrenaline
+			"Adrenaline": self.adrenaline,
+			"Future Live": self.futureLive,
+			"Future Blank": self.futureBlank,
 		}
 
 static var printOptions = false
@@ -667,6 +670,14 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		liveChance = (liveCount-tempStates.futureLive) / total
 		blankChance = (blankCount-tempStates.futureBlank) / total
 
+	var originalRemove := 1
+	var invertedRemove := 0
+	if tempStates.inverted:
+		var temp = liveChance
+		liveChance = blankChance
+		blankChance = temp
+		originalRemove = 0
+		invertedRemove = 1
 
 	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify+opponent.burner > 0 and liveChance > 0 and blankChance > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.inverter > 0):
 		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
@@ -729,17 +740,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
 			options[OPTION_BURNER].mutAdd(blankResult.mult(bBlankChance))
 
-		print(bMissChance, " ", bLiveChance, " ", bBlankChance)
-
-	var originalRemove := 1
-	var invertedRemove := 0
-	if tempStates.inverted:
-		var temp = liveChance
-		liveChance = blankChance
-		blankChance = temp
-		originalRemove = 0
-		invertedRemove = 1
-
 	var damageToDeal := int(min(2 if tempStates.usedHandsaw else 1, opponent.health))
 
 	var beerPlayer = player
@@ -794,12 +794,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 	if printOptions and isTopLayer:
 		print(options, " (", ahash, ")")
-
-	if options.has(OPTION_ADRENALINE) and options[OPTION_ADRENALINE].deathChance[0] == -100:
-		print(options)
-		print(player)
-		print(opponent)
-		print(tempStates)
+		# print(player, " ", opponent, " ", tempStates)
 
 	var current: Result = null
 	var results: Array[Result] = []

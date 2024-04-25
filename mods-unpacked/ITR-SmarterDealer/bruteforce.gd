@@ -365,12 +365,23 @@ class TempStates:
 		other.futureBlank = 0
 		return other
 
-	func do_hash(num: int)->int:
+	func Future(live, blank)->TempStates:
+		var other: TempStates = self.clone()
+		other.futureLive += live
+		other.futureBlank += blank
+		return other
+
+	func do_hash(num: int, liveCount_max: int)->int:
 		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 4
 		if self.usedHandsaw:
 			num += 2
 		if self.inverted:
 			num += 1
+		num *= liveCount_max
+		num += self.futureLive
+		num *= (liveCount_max+1)
+		num += self.futureBlank
+
 		return num
 
 	func _to_string():
@@ -463,7 +474,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	var ahash: int = blankCount * (liveCount_max+1) + liveCount
 	ahash = player.do_hash(ahash)
 	ahash = opponent.do_hash(ahash)
-	ahash = tempStates.do_hash(ahash)
+	ahash = tempStates.do_hash(ahash, liveCount_max)
 
 	if cache.has(ahash) and not isTopLayer:
 		return cache[ahash].clone()
@@ -717,6 +728,8 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		if bBlankChance > 0:
 			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
 			options[OPTION_BURNER].mutAdd(blankResult.mult(bBlankChance))
+
+		print(bMissChance, " ", bLiveChance, " ", bBlankChance)
 
 	var originalRemove := 1
 	var invertedRemove := 0

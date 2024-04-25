@@ -308,6 +308,7 @@ func DealerChoice()->void:
 		var randindex =  randi_range(1, len - 1)
 		if(randindex == 8): randindex -= 1
 		sequenceArray_knownShell[randindex] = true
+		print("Dealer saw shell #", randindex)
 		dealerWantsToUse = "burner phone"
 	elif choice == Bruteforce.OPTION_ADRENALINE:
 		adrenaline = true

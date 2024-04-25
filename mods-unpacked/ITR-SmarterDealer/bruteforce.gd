@@ -491,11 +491,10 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	# Double or nothing round has special logic
 	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING and player.player_index == 1
 
-	var smokeAmount: int = min(player.cigarettes, player.max_health - player.health)
-
 	if liveCount == 0 and blankCount == 0:
 		var playerItemscore := player.sum_items()
 
+		var smokeAmount: int = min(player.cigarettes, player.max_health - player.health)
 		if player.player_index != 0:
 			smokeAmount = 0
 
@@ -592,12 +591,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		cache[ahash] = result
 
 		return result
-
-	if donLogic:
-		smokeAmount = 0
-	elif smokeAmount > 0:
-		player = player.use("cigarettes", smokeAmount)
-		player.health += smokeAmount
 
 	var options: Dictionary = {
 		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),

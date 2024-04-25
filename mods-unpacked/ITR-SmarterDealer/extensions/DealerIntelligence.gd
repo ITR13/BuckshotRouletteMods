@@ -352,20 +352,24 @@ func DealerChoice()->void:
 			# I don't understand what this code does, but we need to add an item to itemManager.itemArray_instances_dealer
 			var ch = itemManager.itemSpawnParent.get_children()
 			for c in ch.size():
-				if(ch[c].get_child(0) is PickupIndicator):
+				if(not (ch[c].get_child(0) is PickupIndicator)):
+					continue
 					var temp_indicator : PickupIndicator = ch[c].get_child(0)
 					var temp_interaction : InteractionBranch = ch[c].get_child(1)
 					if (ch[c].transform.origin.z > 0): temp_indicator.whichSide = "right"
 					else: temp_indicator.whichSide= "left"
-					if (temp_interaction.isPlayerSide):
+				if (not temp_interaction.isPlayerSide) or temp_interaction.itemName != dealerWantsToUse:
+					continue
+
 						itemManager.itemArray_instances_dealer.insert(0, ch[c])
-						inv_playerside.insert(0, temp_interaction.itemName)
+				break
 
 			adrenaline = false
 			hands.stealing = true
 			await(hands.PickupItemFromTable(dealerWantsToUse))
 			await get_tree().create_timer(1.1, false).timeout
 			print("Dealer steals "+dealerWantsToUse)
+			itemManager.itemArray_player.erase(dealerWantsToUse)
 
 		if (returning): return
 		DealerChoice()

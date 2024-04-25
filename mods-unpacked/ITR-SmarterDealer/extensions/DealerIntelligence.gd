@@ -58,7 +58,7 @@ func createPlayer(player_index, itemArray):
 			medicine += 1
 		elif (item == "inverter"):
 			inverters += 1
-		elif (item == "burner"):
+		elif (item == "burner phone"):
 			burners += 1
 		elif (item == "adrenaline"):
 			adrenaline += 1
@@ -308,6 +308,7 @@ func DealerChoice()->void:
 		var randindex =  randi_range(1, len - 1)
 		if(randindex == 8): randindex -= 1
 		sequenceArray_knownShell[randindex] = true
+		dealerWantsToUse = "burner phone"
 	elif choice == Bruteforce.OPTION_ADRENALINE:
 		adrenaline = true
 		dealerWantsToUse = "adrenaline"

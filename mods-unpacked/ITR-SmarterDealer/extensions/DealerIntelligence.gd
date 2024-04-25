@@ -147,7 +147,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	tempStates.usedHandsaw = roundManager.barrelSawedOff
 	tempStates.adrenaline = adrenaline
 	tempStates.inverted = inverted_shell
-	if shell != Bruteforce.MAGNIFYING_NONE:
+	if shell == Bruteforce.MAGNIFYING_NONE:
 		tempStates.futureBlank = blankCount - blankUnknown
 		tempStates.futureLive = liveCount - liveUnknown
 

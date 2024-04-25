@@ -354,14 +354,15 @@ func DealerChoice()->void:
 			for c in ch.size():
 				if(not (ch[c].get_child(0) is PickupIndicator)):
 					continue
-					var temp_indicator : PickupIndicator = ch[c].get_child(0)
-					var temp_interaction : InteractionBranch = ch[c].get_child(1)
-					if (ch[c].transform.origin.z > 0): temp_indicator.whichSide = "right"
-					else: temp_indicator.whichSide= "left"
+
+				var temp_indicator : PickupIndicator = ch[c].get_child(0)
+				var temp_interaction : InteractionBranch = ch[c].get_child(1)
+				if (ch[c].transform.origin.z > 0): temp_indicator.whichSide = "right"
+				else: temp_indicator.whichSide= "left"
 				if (not temp_interaction.isPlayerSide) or temp_interaction.itemName != dealerWantsToUse:
 					continue
 
-						itemManager.itemArray_instances_dealer.insert(0, ch[c])
+				itemManager.itemArray_instances_dealer.insert(0, ch[c])
 				break
 
 			adrenaline = false

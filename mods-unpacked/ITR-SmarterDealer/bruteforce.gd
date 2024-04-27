@@ -83,7 +83,7 @@ class Result:
 		return self.mult(1)
 
 	func _to_string():
-		return "Option %s [%s] [%s] [%s] [%s]" % [
+		return "Option %s %s %s %s %s" % [
 			self.option, self.deathChance, self.deathChanceNextTurn, self.healthScore, self.itemScore
 		]
 
@@ -593,7 +593,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 		cache[ahash] = result
 
-		return result
+		return result.clone()
 
 
 	var liveChance := 0.0
@@ -632,7 +632,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 						var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 						result.option = OPTION_ADRENALINE
 						cache[ahash] = result
-						return result
+						return result.clone()
 					var a = player
 					var b = opponent
 					if tempStates.adrenaline:
@@ -642,13 +642,13 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 					var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 					result.option = OPTION_HANDSAW
 					cache[ahash] = result
-					return result
+					return result.clone()
 
 				var result = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", opponent.health), player, TempStates.new())
 				result = result.clone()
 				result.option = OPTION_SHOOT_OTHER
 				cache[ahash] = result
-				return result
+				return result.clone()
 			elif blankChance >= 1:
 				if player.inverter > 0 or (opponent.inverter > 0 and tempStates.adrenaline):
 					var a = player
@@ -660,12 +660,12 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 					var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Invert())
 					result.option = OPTION_INVERTER
 					cache[ahash] = result
-					return result
+					return result.clone()
 				elif opponent.inverter > 0 and player.adrenaline > toSteal:
 					var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 					result.option = OPTION_ADRENALINE
 					cache[ahash] = result
-					return result
+					return result.clone()
 			elif (player.magnify > 0 or (tempStates.adrenaline and opponent.magnify > 0)) and (player.inverter > 0 or (opponent.inverter > 0 and player.adrenaline > toSteal)):
 				var a = player
 				var b = opponent
@@ -679,12 +679,12 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 				result.mutAdd(liveResult.mult(liveChance))
 				result.option = OPTION_MAGNIFY
 				cache[ahash] = result
-				return result
+				return result.clone()
 			elif (opponent.magnify > 0 and player.inverter > 0 and player.adrenaline > toSteal) or (opponent.magnify > 0 and opponent.inverter > 0 and player.adrenaline >= toSteal+2):
 				var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 				result.option = OPTION_ADRENALINE
 				cache[ahash] = result
-				return result
+				return result.clone()
 
 	var options: Dictionary = {
 		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),
@@ -911,13 +911,13 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 	if results.size() <= 1:
 		cache[ahash] = results[0]
-		return results[0]
+		return results[0].clone()
 
 	results.shuffle()
 
 	cache[ahash] = results[0]
 
-	return results[0]
+	return results[0].clone()
 
 
 static func RandomizeDealer():

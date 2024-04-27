@@ -559,7 +559,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		if health[1] > damageToDeal:
 			dealerDeathChance[1] *= 0
 
-
 		# 4+ shells
 		var handcuffDamageToDeal = damageToDeal
 		if startingPlayer.handcuffs > 0:
@@ -588,8 +587,14 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 				var secondIsLiveChance = (tempLiveShells-1) / float(i - 1)
 				playerDeathChance += lastIsLiveChance * secondIsLiveChance
 
+		# Special scenario where dealer dies no matter what
 		var shellChance = 1.0/7.0
-		var result = Result.new(OPTION_NONE, [0.0, 0.0], [playerDeathChance * shellChance, sum_array(dealerDeathChance) * shellChance], health, itemscore)
+		var deathChance = [playerDeathChance * shellChance, sum_array(dealerDeathChance) * shellChance]
+		if health[1] <= damageToDeal:
+			if (startingPlayer.magnify > 0 and startingPlayer.inverter > 0) or (startingPlayer.magnify > 0 and startingPlayer.adrenaline > 0 and otherPlayer.inverter > 0) or (startingPlayer.inverter > 0 and startingPlayer.adrenaline > 0 and otherPlayer.magnify > 0) or (startingPlayer.adrenaline >= 2 and otherPlayer.magnify > 0 and otherPlayer.inverter > 0):
+				deathChance = [0.0, 1.0]
+
+		var result = Result.new(OPTION_NONE, [0.0, 0.0], deathChance, health, itemscore)
 
 		cache[ahash] = result
 

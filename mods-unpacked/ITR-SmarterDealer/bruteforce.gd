@@ -595,6 +595,97 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 		return result
 
+
+	var liveChance := 0.0
+	var blankChance := 0.0
+
+	if tempStates.magnifyingGlassResult == MAGNIFYING_BLANK:
+		liveChance = 0.0
+		blankChance = 1.0
+	elif tempStates.magnifyingGlassResult == MAGNIFYING_LIVE:
+		liveChance = 1.0
+		blankChance = 0.0
+	else:
+		var total := float(liveCount + blankCount - tempStates.futureLive - tempStates.futureBlank)
+		liveChance = (liveCount-tempStates.futureLive) / total
+		blankChance = (blankCount-tempStates.futureBlank) / total
+
+	var originalRemove := 1
+	var invertedRemove := 0
+	if tempStates.inverted:
+		var temp = liveChance
+		liveChance = blankChance
+		blankChance = temp
+		originalRemove = 0
+		invertedRemove = 1
+
+	# Some hard-coded kills to speed up:
+	if player.player_index == 1:
+		if opponent.health == 1 or (opponent.health == 2 and (tempStates.usedHandsaw or player.handsaw > 0 or (opponent.handsaw > 0 and player.adrenaline > 0))):
+			var toSteal = 0
+			if opponent.health == 2 and not tempStates.usedHandsaw and player.handsaw == 0:
+				toSteal = 1
+
+			if liveChance >= 1:
+				if opponent.health == 2 and not tempStates.usedHandsaw:
+					if player.handsaw == 0 and opponent.handsaw > 0 and player.adrenaline > 0 and not tempStates.adrenaline:
+						var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
+						result.option = OPTION_ADRENALINE
+						cache[ahash] = result
+						return result
+					var a = player
+					var b = opponent
+					if tempStates.adrenaline:
+						b = b.use("handsaw")
+					else:
+						a = a.use("handsaw")
+					var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
+					result.option = OPTION_HANDSAW
+					cache[ahash] = result
+					return result
+
+				var result = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", opponent.health), player, TempStates.new())
+				result = result.clone()
+				result.option = OPTION_SHOOT_OTHER
+				cache[ahash] = result
+				return result
+			elif blankChance >= 1:
+				if player.inverter > 0 or (opponent.inverter > 0 and tempStates.adrenaline):
+					var a = player
+					var b = opponent
+					if tempStates.adrenaline:
+						b = b.use("inverter")
+					else:
+						a = a.use("inverter")
+					var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Invert())
+					result.option = OPTION_INVERTER
+					cache[ahash] = result
+					return result
+				elif opponent.inverter > 0 and player.adrenaline > toSteal:
+					var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
+					result.option = OPTION_ADRENALINE
+					cache[ahash] = result
+					return result
+			elif (player.magnify > 0 or (tempStates.adrenaline and opponent.magnify > 0)) and (player.inverter > 0 or (opponent.inverter > 0 and player.adrenaline > toSteal)):
+				var a = player
+				var b = opponent
+				if tempStates.adrenaline:
+					b = b.use("magnify")
+				else:
+					a = a.use("magnify")
+				var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
+				var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
+				var result = blankResult.mult(blankChance)
+				result.mutAdd(liveResult.mult(liveChance))
+				result.option = OPTION_MAGNIFY
+				cache[ahash] = result
+				return result
+			elif (opponent.magnify > 0 and player.inverter > 0 and player.adrenaline > toSteal) or (opponent.magnify > 0 and opponent.inverter > 0 and player.adrenaline >= toSteal+2):
+				var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
+				result.option = OPTION_ADRENALINE
+				cache[ahash] = result
+				return result
+
 	var options: Dictionary = {
 		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),
 	}
@@ -649,28 +740,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Invert())
 		options[OPTION_INVERTER] = result
 
-	var liveChance := 0.0
-	var blankChance := 0.0
-
-	if tempStates.magnifyingGlassResult == MAGNIFYING_BLANK:
-		liveChance = 0.0
-		blankChance = 1.0
-	elif tempStates.magnifyingGlassResult == MAGNIFYING_LIVE:
-		liveChance = 1.0
-		blankChance = 0.0
-	else:
-		var total := float(liveCount + blankCount - tempStates.futureLive - tempStates.futureBlank)
-		liveChance = (liveCount-tempStates.futureLive) / total
-		blankChance = (blankCount-tempStates.futureBlank) / total
-
-	var originalRemove := 1
-	var invertedRemove := 0
-	if tempStates.inverted:
-		var temp = liveChance
-		liveChance = blankChance
-		blankChance = temp
-		originalRemove = 0
-		invertedRemove = 1
 
 	if not tempStates.usedHandsaw and itemFrom.handsaw > 0 and (donLogic or liveChance > 0):
 		var a = player

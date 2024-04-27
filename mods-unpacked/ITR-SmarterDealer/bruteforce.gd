@@ -387,9 +387,9 @@ class TempStates:
 			num += 2
 		if self.inverted:
 			num += 1
-		num *= liveCount_max
-		num += self.futureLive
 		num *= (liveCount_max+1)
+		num += self.futureLive
+		num *= (liveCount_max+2)
 		num += self.futureBlank
 
 		return num

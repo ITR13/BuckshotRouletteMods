@@ -913,6 +913,14 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		cache[ahash] = results[0]
 		return results[0].clone()
 
+	# Medicine is usually not worth, even if the expected value is 0.
+	# This should technically be fixed through deathChanceNextTurn, but that's a headache.
+	for i in range(results.size()):
+		if results[i].option != OPTION_MEDICINE:
+			continue
+		results.remove_at(i)
+		break
+
 	results.shuffle()
 
 	cache[ahash] = results[0]

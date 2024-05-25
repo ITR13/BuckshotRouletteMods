@@ -375,6 +375,11 @@ class TempStates:
 		other.adrenaline = false
 		return other
 
+	func Medicine()->TempStates:
+		var other: TempStates = self.clone()
+		other.adrenaline = false
+		return other
+
 
 	func do_hash(num: int, liveCount_max: int)->int:
 		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 4
@@ -592,15 +597,11 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 				cache[ahash] = result
 				return result.clone()
 
-	var options: Dictionary = {
-		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),
-	}
-	if not tempStates.usedHandsaw:
-		options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+	var options: Dictionary = {}
 
 	var itemFrom = opponent if tempStates.adrenaline else player
 
-	if tempStates.handcuffState <= HANDCUFF_NONE and itemFrom.handcuffs > 0 and (donLogic or (liveCount+blankCount) > 1):
+	if tempStates.handcuffState <= HANDCUFF_NONE and itemFrom.handcuffs > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -610,9 +611,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Cuff())
 		options[OPTION_HANDCUFFS] = result
 
-	if itemFrom.cigarettes > 0 and (player.health < player.max_health or donLogic):
-		# On double or nothing rounds you might want to waste cigarettes to have them carry over to the next round
-		# Technically you might want this even on regular rounds, but it makes the logic messy. Same reason for don-checks above
+	if itemFrom.cigarettes > 0:
 		var healedPlayer := player.use("cigarettes", 0 if tempStates.adrenaline else 1)
 		var healedOpponent := opponent.use("cigarettes", 1 if tempStates.adrenaline else 0)
 		if healedPlayer.health < healedPlayer.max_health:
@@ -621,18 +620,34 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_CIGARETTES] = result
 
 	if itemFrom.beer > 0:
+		var beerPlayer = player
+		var beerOpponent = opponent
+		if tempStates.adrenaline:
+			beerOpponent = beerOpponent.use("beer")
+		else:
+			beerPlayer = beerPlayer.use("beer")
+
 		options[OPTION_BEER] = Result.new(OPTION_BEER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		if liveChance > 0:
+			var liveBeerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
+			options[OPTION_BEER].mutAdd(liveBeerResult.mult(liveChance))
+		if blankChance > 0:
+			var blankBeerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
+			options[OPTION_BEER].mutAdd(blankBeerResult.mult(blankChance))
 
 	# Dealer isn't allowed to eat medicine on 1 health left... for some reason
-	if player.medicine > 0 and not tempStates.adrenaline and (player.player_index == 0 or player.health > 1):
-		var goodMedicine := player.use("medicine")
+	if itemFrom.medicine > 0 and (player.player_index == 0 or player.health > 1):
+		var medicinePlayer := player.use("medicine", 0 if tempStates.adrenaline else 1)
+		var medicineOpponent := player.use("medicine", 1 if tempStates.adrenaline else 0)
+
+		var goodMedicine := medicinePlayer.clone()
 		goodMedicine.health += 2
 		if goodMedicine.health > goodMedicine.max_health:
 			goodMedicine.health = goodMedicine.max_health
-		var badMedicine := player.use("medicine")
+		var badMedicine := medicinePlayer.clone()
 		badMedicine.health -= 1
-		var goodResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, opponent, tempStates)
-		var badResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, opponent, tempStates)
+		var goodResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, medicineOpponent, tempStates.Medicine())
+		var badResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, medicineOpponent, tempStates.Medicine())
 		goodResult.mutAdd(badResult)
 		options[OPTION_MEDICINE] = goodResult.mult(0.5)
 
@@ -647,7 +662,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_INVERTER] = result
 
 
-	if not tempStates.usedHandsaw and itemFrom.handsaw > 0 and (donLogic or liveChance > 0):
+	if not tempStates.usedHandsaw and itemFrom.handsaw > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -657,14 +672,11 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 		options[OPTION_HANDSAW] = result
 
-	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify+opponent.burner > 0 and liveChance > 0 and blankChance > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw and liveChance > 0) or opponent.inverter > 0 or (opponent.cigarettes > 0 and player.health <= 2 and player.max_health > player.health)):
+	if not tempStates.adrenaline and player.adrenaline > 0 and (opponent.magnify > 0 or opponent.burner > 0 or opponent.beer > 0 or (opponent.handcuffs > 0 and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.cigarettes > 0 or (opponent.medicine > 0 and (player.player_index == 0 or player.health > 1)) or opponent.inverter > 0):
 		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 		options[OPTION_ADRENALINE] = result
-		if result.option == OPTION_NONE:
-			print("Bad adrenaline pathing: ", liveCount, " ", blankCount, "\n", player, "\n", opponent, "\n", tempStates, "\n")
 
-
-	if tempStates.magnifyingGlassResult == MAGNIFYING_NONE and itemFrom.magnify > 0 and (liveChance > 0 and blankChance > 0):
+	if itemFrom.magnify > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -675,19 +687,9 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
 		options[OPTION_MAGNIFY] = blankResult.mult(blankChance)
 		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveChance))
-	elif donLogic and itemFrom.magnify > 0:
-		var a = player
-		var b = opponent
-		if tempStates.adrenaline:
-			b = b.use("magnify")
-		else:
-			a = a.use("magnify")
-		# Allow wasting magnifying glasses, though you literally never want to do this
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
-		options[OPTION_MAGNIFY] = result
 
 
-	if itemFrom.burner > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE and liveChance > 0 and blankChance > 0:
+	if itemFrom.burner > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -718,57 +720,40 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
 			options[OPTION_BURNER].mutAdd(blankResult.mult(bBlankChance))
 
-	var damageToDeal := int(min(2 if tempStates.usedHandsaw else 1, opponent.health))
+	var damageToDeal := 2 if tempStates.usedHandsaw else 1
 
-	var beerPlayer = player
-	var beerOpponent = opponent
-	if tempStates.adrenaline:
-		beerOpponent = beerOpponent.use("beer")
-	else:
-		beerPlayer = beerPlayer.use("beer")
+	options[OPTION_SHOOT_OTHER] = Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+	options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
 	if liveChance > 0:
-		var resultIfShootLife := Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
-		var resultIfSelfShootLive := Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
+		var resultIfShootLive := Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		var resultIfSelfShootLive := Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
-			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", damageToDeal), player, TempStates.new())
-			if not tempStates.usedHandsaw:
-				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent, player.use("health", damageToDeal), TempStates.new())
-			resultIfShootLife = resultIfShootLife.clone()
-			resultIfSelfShootLive = resultIfSelfShootLive.clone()
+			resultIfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", damageToDeal), player, TempStates.new())
+			resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent, player.use("health", damageToDeal), TempStates.new())
 		else:
 			var newTempState := TempStates.new()
 			newTempState.handcuffState = HANDCUFF_FREENEXT
-			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player, opponent.use("health", damageToDeal), newTempState)
-			if not tempStates.usedHandsaw:
-				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player.use("health", damageToDeal), opponent, newTempState)
+			resultIfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player, opponent.use("health", damageToDeal), newTempState.clone())
+			resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player.use("health", damageToDeal), opponent, newTempState)
 
-		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootLife.mult(liveChance))
-
-		if not tempStates.usedHandsaw:
-			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootLive.mult(liveChance))
-
-		if itemFrom.beer > 0:
-			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
-			options[OPTION_BEER].mutAdd(beerResult.mult(liveChance))
+		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootLive.mult(liveChance))
+		options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootLive.mult(liveChance))
 
 	if blankChance > 0:
-		if not tempStates.usedHandsaw:
-			var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, tempStates.SkipBullet())
-			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))
+		var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, tempStates.SkipBullet())
 
+		var resultIfShootBlank := Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
-			var resultIfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, opponent, player, TempStates.new())
-			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
+			resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, opponent, player, TempStates.new())
 		else:
 			var newTempState := TempStates.new()
 			newTempState.handcuffState = HANDCUFF_FREENEXT
-			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, newTempState)
-			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
+			resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, newTempState)
 
-		if itemFrom.beer > 0:
-			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
-			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
+		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
+		options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))
+
 
 	if printOptions and isTopLayer:
 		print(options, " (", ahash, ")")
@@ -818,18 +803,8 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		cache[ahash] = results[0]
 		return results[0].clone()
 
-	# Medicine is usually not worth, even if the expected value is 0.
-	# This should technically be fixed through deathChance, but that's a headache.
-	for i in range(results.size()):
-		if results[i].option != OPTION_MEDICINE:
-			continue
-		results.remove_at(i)
-		break
-
 	results.shuffle()
-
 	cache[ahash] = results[0]
-
 	return results[0].clone()
 
 

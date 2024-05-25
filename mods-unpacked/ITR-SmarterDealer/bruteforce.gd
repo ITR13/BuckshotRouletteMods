@@ -484,109 +484,21 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING and player.player_index == 1
 
 	if liveCount == 0 and blankCount == 0:
-		var playerItemscore := player.sum_items()
-
-		var smokeAmount: int = min(player.cigarettes, player.max_health - player.health)
-		if player.player_index != 0:
-			smokeAmount = 0
-
-		var opponentSmokeAmount := 0
-		if opponent.player_index == 0:
-			opponentSmokeAmount = min(opponent.cigarettes, opponent.max_health - opponent.health)
-
-		var opponentItemscore := opponent.sum_items()
+		var deathChance: Array[float] = [0.0, 0.0]
 
 		var health: Array[float] = [0.0, 0.0]
-		health[player.player_index] = player.health + smokeAmount
-		health[opponent.player_index] = opponent.health + opponentSmokeAmount
+		health[player.player_index] = player.health
+		health[opponent.player_index] = opponent.health
 
 		var itemscore: Array[float] = [0.0, 0.0]
-		itemscore[player.player_index] = playerItemscore
-		itemscore[opponent.player_index] = opponentItemscore
-
-		var dealerDeathChance: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-		var playerDeathChance: float = 0.0
+		itemscore[player.player_index] = player.sum_items()
+		itemscore[opponent.player_index] = opponent.sum_items()
 
 		var startingPlayer = player if player.player_index == 0 else opponent
 		var otherPlayer = player if player.player_index == 1 else opponent
 
-		# two shells
-		var damageToDeal: int = 2 if startingPlayer.handsaw > 0 else 1
-
-		if health[1] <= damageToDeal:
-			if startingPlayer.handcuffs > 0 or startingPlayer.magnify > 0:
-				dealerDeathChance[0] += 1.0
-			elif startingPlayer.beer > 0 or health[0] >= 2:
-				dealerDeathChance[0] += 0.5
-
-		if startingPlayer.handcuffs == 0 and startingPlayer.magnify == 0 and startingPlayer.beer == 0 and health[0] <= 1:
-			playerDeathChance += 0.5
-
-		# 3 shells
-		if startingPlayer.magnify >= 2:
-			dealerDeathChance[1] += 1
-		elif startingPlayer.magnify >= 1:
-			if startingPlayer.handcuffs > 0:
-				dealerDeathChance[1] += 1.0 if health[1] <= 1 else 2.0 / 3
-			elif startingPlayer.beer > 0:
-				dealerDeathChance[1] += 2.0 / 3.0
-		elif startingPlayer.handcuffs > 0:
-			if startingPlayer.beer > 0:
-				dealerDeathChance[1] += 2.0 / 3.0 if health[1] <= 1 else 1.0 / 3.0
-			elif health[0] >= 2:
-				dealerDeathChance[1] += 2.0 / 3.0 if health[1] <= 1 else 1.0 / 3.0
-			else:
-				playerDeathChance = 1.0 / 3.0
-		elif startingPlayer.beer >= 2:
-			dealerDeathChance[1] += 1.0 / 3.0
-		elif health[0] >= 2:
-			dealerDeathChance[1] += 1.0 / 3.0
-		else:
-			dealerDeathChance[1] += 1.0 / 3.0
-			playerDeathChance += 1.0 / 3.0
-
-		if health[1] > damageToDeal:
-			dealerDeathChance[1] *= 0
-
-		# 4+ shells
-		var handcuffDamageToDeal = damageToDeal
-		if startingPlayer.handcuffs > 0:
-			handcuffDamageToDeal += 2 if startingPlayer.handsaw >= 2 else 1
-
-		var dealerDamage = 2 if otherPlayer.handsaw > 0 else 1
-		if otherPlayer.handcuffs > 0:
-			dealerDamage += 2 if otherPlayer.handsaw >= 2 else 1
-
-		for i in range(4, 9):
-			@warning_ignore("integer_division")
-			var tempLiveShells = i / 2
-			var tempBlankShells = i - tempLiveShells
-			if health[1] <= damageToDeal:
-				if startingPlayer.magnify >= tempBlankShells:
-					dealerDeathChance[i-2] += 1
-				if startingPlayer.handcuffs > 0 and health[1] <= 1:
-					if startingPlayer.magnify >= tempBlankShells - 1:
-						dealerDeathChance[i-2] += 1
-			elif health[1] <= handcuffDamageToDeal:
-				if startingPlayer.magnify >= tempBlankShells + 1:
-					dealerDeathChance[i-2] += 1
-
-			if dealerDeathChance[i-2] != 1 and health[0] <= dealerDamage:
-				var lastIsLiveChance = tempLiveShells / float(i)
-				var secondIsLiveChance = (tempLiveShells-1) / float(i - 1)
-				playerDeathChance += lastIsLiveChance * secondIsLiveChance
-
-		# Special scenario where dealer dies no matter what
-		var shellChance = 1.0/7.0
-		var deathChance = [playerDeathChance * shellChance, sum_array(dealerDeathChance) * shellChance]
-		if health[1] <= damageToDeal:
-			if (startingPlayer.magnify > 0 and startingPlayer.inverter > 0) or (startingPlayer.magnify > 0 and startingPlayer.adrenaline > 0 and otherPlayer.inverter > 0) or (startingPlayer.inverter > 0 and startingPlayer.adrenaline > 0 and otherPlayer.magnify > 0) or (startingPlayer.adrenaline >= 2 and otherPlayer.magnify > 0 and otherPlayer.inverter > 0):
-				deathChance = [0.0, 1.0]
-
 		var result = Result.new(OPTION_NONE, deathChance, health, itemscore)
-
 		cache[ahash] = result
-
 		return result.clone()
 
 

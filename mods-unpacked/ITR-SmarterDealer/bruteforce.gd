@@ -928,8 +928,9 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 
 static func RandomizeDealer():
-	dealerKillCutoff = randf()
-	dealerDeathCutoff = randf()
+	# TODO(rballard): See what these were supposed to be doing.
+	var dealerKillCutoff = randf()
+	var dealerDeathCutoff = randf()
 
 	ModLoaderLog.info(
 		"Randomized dealer!\nkillCutoff %s\ndeathCutoff %s" % [
@@ -938,19 +939,19 @@ static func RandomizeDealer():
 		"ITR-SmarterDealer"
 	)
 
-static var dealerKillCutoff: float = 0.8
-static var dealerDeathCutoff: float = 0.8
-
 # -1 means current is better than other
 static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 	if isPlayer0:
+		# The player's first priority is staying alive, followed by killing the dealer.
+		# This is because the player has a strong advantage in new rounds because they go first.
+
 		# Lower is better
-		comparison = Compare(
+		surviveComparison = Compare(
 			current.deathChance[0],
 			other.deathChance[0]
 		)
-		if comparison != 0:
-			return comparison
+		if surviveComparison != 0:
+			return surviveComparison
 
 		# Higher is better
 		var killComparison = Compare(
@@ -960,30 +961,27 @@ static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 		if killComparison != 0:
 			return killComparison
 	else:
-		if current.deathChance[1] > dealerDeathCutoff:
-			# Lower is better
-			var comparison = Compare(current.deathChance[1], other.deathChance[1])
-			if comparison != 0:
-				return comparison
-		elif Compare(other.deathChance[1], dealerDeathCutoff) > 0:
-			return -1
+		# The dealer's first priority is killing the player, followed by staying alive.
+		# This is because the player has a strong advantage in new rounds because they go first, and the dealer only has to kill the player once.
+
+		# Higher is better
+		killComparison = Compare(
+			other.deathChance[0],
+			current.deathChance[0]
+		)
+		if killComparison != 0:
+			return killComparison
+
+		# Lower is better
+		var surviveComparison = Compare(
+			current.deathChance[1],
+			other.deathChance[1]
+		)
+		if surviveComparison != 0:
+			return surviveComparison
 
 	var myIndex = 0 if isPlayer0 else 1
 	var otherIndex = 1 if isPlayer0 else 0
-
-	# Higher is better
-	var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
-	if killComparison != 0:
-		return killComparison
-
-	if Compare(other.deathChance[otherIndex], 1.0) >= 0:
-		var itemDiff = current.itemScore[myIndex] - current.itemScore[otherIndex]
-		var otherItemDiff = other.itemScore[myIndex] - other.itemScore[otherIndex]
-
-		# Higher is better
-		var comparison = Compare(otherItemDiff, itemDiff)
-		if comparison != 0:
-			return comparison
 
 	var healthDiff = current.healthScore[myIndex] - current.healthScore[otherIndex]
 	var otherHealthDiff = other.healthScore[myIndex] - other.healthScore[otherIndex]

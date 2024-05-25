@@ -450,22 +450,16 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	if player.health <= 0 or opponent.health <= 0:
 		var deadPlayerIs0 = (player.player_index if player.health == 0 else opponent.player_index) == 0
 
-		var itemScore: Array[float] = [0.0, 0.0]
-
-		itemScore[player.player_index] = player.sum_items()
-		itemScore[opponent.player_index] = opponent.sum_items()
-
 		var deathScore := [1.0, 0.0] if deadPlayerIs0 else [0.0, 1.0]
 
+		# Leftover health doesn't matter when a player dies. Set it to 0 here so CompareCurrent only compares health totals for the fraction of cases that don't end in a death.
 		var healthScore: Array[float] = [0.0, 0.0]
-		healthScore[player.player_index] = float(player.health)
-		healthScore[opponent.player_index] = float(opponent.health)
 
-		if not deadPlayerIs0:
-			if player.player_index == 0:
-				healthScore[0] += float(min(player.cigarettes, player.max_health - player.health))
-			else:
-				healthScore[0] += float(min(opponent.cigarettes, opponent.max_health - opponent.health))
+		var itemScore: Array[float] = [0.0, 0.0]
+		# The only time leftover items matter after a death is if the dealer dies in a double-or-nothing round.
+		if not deadPlayerIs0 and roundType == ROUNDTYPE_DOUBLEORNOTHING:
+			itemScore[player.player_index] = player.sum_items()
+			itemScore[opponent.player_index] = opponent.sum_items()
 
 		return Result.new(OPTION_NONE, deathScore, healthScore, itemScore)
 
@@ -929,8 +923,8 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 
 static func RandomizeDealer():
 	# TODO(rballard): See what these were supposed to be doing.
-	var dealerKillCutoff = randf()
-	var dealerDeathCutoff = randf()
+	var dealerKillCutoff := randf()
+	var dealerDeathCutoff := randf()
 
 	ModLoaderLog.info(
 		"Randomized dealer!\nkillCutoff %s\ndeathCutoff %s" % [

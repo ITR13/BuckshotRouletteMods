@@ -888,7 +888,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			results = [current]
 			continue
 
-		var comparison = CompareCurrent(player.player_index == 0, false, current, option)
+		var comparison = CompareCurrent(player.player_index == 0, current, option)
 		if comparison == 0:
 			results.append(option)
 			continue
@@ -942,7 +942,7 @@ static var dealerKillCutoff: float = 0.8
 static var dealerDeathCutoff: float = 0.8
 
 # -1 means current is better than other
-static func CompareCurrent(isPlayer0: bool, donLogic: bool, current: Result, other: Result):
+static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 	if isPlayer0:
 		# Lower is better
 		comparison = Compare(
@@ -971,38 +971,19 @@ static func CompareCurrent(isPlayer0: bool, donLogic: bool, current: Result, oth
 	var myIndex = 0 if isPlayer0 else 1
 	var otherIndex = 1 if isPlayer0 else 0
 
-	if donLogic and not isPlayer0:
-		if not isPlayer0:
-			if current.deathChance[0] >= dealerKillCutoff:
-				if other.deathChance[0] < dealerKillCutoff:
-					return -1
-			elif other.deathChance[0] >= dealerKillCutoff:
-				return 1
-		else:
-			# Higher is better
-			var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
-			if killComparison != 0:
-				return killComparison
+	# Higher is better
+	var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
+	if killComparison != 0:
+		return killComparison
+
+	if Compare(other.deathChance[otherIndex], 1.0) >= 0:
+		var itemDiff = current.itemScore[myIndex] - current.itemScore[otherIndex]
+		var otherItemDiff = other.itemScore[myIndex] - other.itemScore[otherIndex]
 
 		# Higher is better
-		var itemComparison = Compare(other.itemScore[otherIndex], current.itemScore[otherIndex])
-		if itemComparison != 0:
-			return itemComparison
-
-	else:
-		# Higher is better
-		var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
-		if killComparison != 0:
-			return killComparison
-
-		if Compare(other.deathChance[otherIndex], 1.0) >= 0:
-			var itemDiff = current.itemScore[myIndex] - current.itemScore[otherIndex]
-			var otherItemDiff = other.itemScore[myIndex] - other.itemScore[otherIndex]
-
-			# Higher is better
-			var comparison = Compare(otherItemDiff, itemDiff)
-			if comparison != 0:
-				return comparison
+		var comparison = Compare(otherItemDiff, itemDiff)
+		if comparison != 0:
+			return comparison
 
 	var healthDiff = current.healthScore[myIndex] - current.healthScore[otherIndex]
 	var otherHealthDiff = other.healthScore[myIndex] - other.healthScore[otherIndex]

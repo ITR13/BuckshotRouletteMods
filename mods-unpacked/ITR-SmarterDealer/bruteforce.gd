@@ -638,14 +638,12 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	# Dealer isn't allowed to eat medicine on 1 health left... for some reason
 	if itemFrom.medicine > 0 and (player.player_index == 0 or player.health > 1):
 		var medicinePlayer := player.use("medicine", 0 if tempStates.adrenaline else 1)
-		var medicineOpponent := player.use("medicine", 1 if tempStates.adrenaline else 0)
+		var medicineOpponent := opponent.use("medicine", 1 if tempStates.adrenaline else 0)
 
-		var goodMedicine := medicinePlayer.clone()
-		goodMedicine.health += 2
+		var goodMedicine := medicinePlayer.use("health", -2)
 		if goodMedicine.health > goodMedicine.max_health:
 			goodMedicine.health = goodMedicine.max_health
-		var badMedicine := medicinePlayer.clone()
-		badMedicine.health -= 1
+		var badMedicine := medicinePlayer.use("health", 1)
 		var goodResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, medicineOpponent, tempStates.Medicine())
 		var badResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, medicineOpponent, tempStates.Medicine())
 		goodResult.mutAdd(badResult)
@@ -683,10 +681,14 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			b = b.use("magnify")
 		else:
 			a = a.use("magnify")
-		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
-		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
-		options[OPTION_MAGNIFY] = blankResult.mult(blankChance)
-		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveChance))
+
+		options[OPTION_MAGNIFY] = Result.new(OPTION_MAGNIFY, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		if liveChance > 0:
+			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
+			options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveChance))
+		if blankChance > 0:
+			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
+			options[OPTION_MAGNIFY].mutAdd(blankResult.mult(blankChance))
 
 
 	if itemFrom.burner > 0:
@@ -827,7 +829,7 @@ static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 		# This is because the player has a strong advantage in new rounds because they go first.
 
 		# Lower is better
-		surviveComparison = Compare(
+		var surviveComparison = Compare(
 			current.deathChance[0],
 			other.deathChance[0]
 		)
@@ -846,7 +848,7 @@ static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 		# This is because the player has a strong advantage in new rounds because they go first, and the dealer only has to kill the player once.
 
 		# Higher is better
-		killComparison = Compare(
+		var killComparison = Compare(
 			other.deathChance[0],
 			current.deathChance[0]
 		)

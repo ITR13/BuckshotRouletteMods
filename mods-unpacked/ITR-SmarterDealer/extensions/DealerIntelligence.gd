@@ -70,17 +70,12 @@ func createPlayer(player_index, itemArray):
 	)
 
 
-var prevBatchIndex = -1
 var prevWonRounds = -1
 var inverted_shell = false
 var adrenaline = false
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if (shellSpawner.sequenceArray.size() == 0):
 		return Bruteforce.OPTION_NONE
-
-	if roundManager.playerData.currentBatchIndex != prevBatchIndex:
-		Bruteforce.RandomizeDealer()
-		prevBatchIndex = roundManager.playerData.currentBatchIndex
 
 	var liveCount = 0
 	var blankCount = 0

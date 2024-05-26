@@ -670,7 +670,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 		options[OPTION_HANDSAW] = result
 
-	if not tempStates.adrenaline and player.adrenaline > 0 and (opponent.magnify > 0 or opponent.burner > 0 or opponent.beer > 0 or (opponent.handcuffs > 0 and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw) or opponent.cigarettes > 0 or (opponent.medicine > 0 and (player.player_index == 0 or player.health > 1)) or opponent.inverter > 0):
+	if not tempStates.adrenaline and player.adrenaline > 0:
 		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 		options[OPTION_ADRENALINE] = result
 
@@ -765,14 +765,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	var results: Array[Result] = []
 
 	for key in options:
-		if (tempStates.usedHandsaw or tempStates.adrenaline) and key == OPTION_SHOOT_SELF:
-			# Disallow this for now
-			continue
-
-		if tempStates.adrenaline and key == OPTION_SHOOT_OTHER:
-			# Easier than not traveling down the path
-			continue
-
 		var option = options[key].clone()
 		option.option = key
 
@@ -792,35 +784,11 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		current = option
 		results = [current]
 
-	if results.size() <= 0:
-		print("Oops! Bad pathing! Probably adrenaline's fault again!:\n", options)
-		results = [Result.new(
-			OPTION_NONE,
-			[-100, 100],
-			[100, -100],
-			[100, -100]
-		)]
+	if results.size() > 1:
+		results.shuffle()
 
-	if results.size() <= 1:
-		cache[ahash] = results[0]
-		return results[0].clone()
-
-	results.shuffle()
 	cache[ahash] = results[0]
 	return results[0].clone()
-
-
-static func RandomizeDealer():
-	# TODO(rballard): See what these were supposed to be doing.
-	var dealerKillCutoff := randf()
-	var dealerDeathCutoff := randf()
-
-	ModLoaderLog.info(
-		"Randomized dealer!\nkillCutoff %s\ndeathCutoff %s" % [
-			dealerKillCutoff, dealerDeathCutoff
-		],
-		"ITR-SmarterDealer"
-	)
 
 # -1 means current is better than other
 static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):

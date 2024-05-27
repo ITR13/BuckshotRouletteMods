@@ -387,6 +387,7 @@ func DealerChoice()->void:
 	await get_tree().create_timer(1, false).timeout
 	print("Dealer shoots "+dealerTarget)
 	Shoot(dealerTarget)
+	commentedThisTurn = false
 
 	# Make the barrel regrow after the dealer shoots himself, to be consistent with the player. (This case just never comes up with the vanilla AI.)
 	if (roundManager.barrelSawedOff && dealerTarget == "self"):
@@ -402,13 +403,3 @@ func DealerChoice()->void:
 	inverted_shell = false
 
 	return
-
-func EndTurnMain():
-	commentedThisTurn = false
-	await get_tree().create_timer(.5, false).timeout
-	camera.BeginLerp("home")
-	if (dealerHoldingShotgun):
-		animator_shotgun.play("enemy put down shotgun")
-		shellLoader.DealerHandsDropShotgun()
-	dealerHoldingShotgun = false
-	roundManager.EndTurn(true)

@@ -412,6 +412,8 @@ class TempStates:
 			"Future Blank": self.futureBlank,
 		}
 
+# liveCount and blankCount both contain the count of bullets without considering the effect of active inverters.
+# tempStates.magnifyingGlassResult does consider the effect of active inverters.
 static var printOptions = false
 static var cachedGame: BruteforceGame = null
 static var cache = {}
@@ -701,15 +703,26 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			a = a.use("burner")
 
 		# There are 4 possible scenarios:
-		# Hit an unseen live (live - futureLive) / total
-		# Hit an unseen blank (blank - futureBlank) / total
-		# Hit an already seen live (futureLive / total)
-		# Hit an already seen blank (futureBlank / total)
+		# Hit an unseen live (expectedFutureLive - knownFutureLive) / futureShells
+		# Hit an unseen blank (expectedFutureBlank - knownFutureBlank) / futureShells
+		# Hit an already seen live (knownFutureLive / futureShells)
+		# Hit an already seen blank (knownFutureBlank / futureShells)
 
-		var bTotal := float(blankCount+liveCount)
-		var bMissChance := (tempStates.futureBlank+tempStates.futureLive) / bTotal
-		var bLiveChance := (liveCount - tempStates.futureLive) / bTotal
-		var bBlankChance := (blankCount - tempStates.futureBlank) / bTotal
+		var futureShellCount := float(blankCount+liveCount-1)
+		var uninvertedFirstLiveChance := liveChance if not tempStates.inverted else blankChance
+
+		var bMissChance
+		var bLiveChance
+		var bBlankChance
+		if futureShellCount == 0:
+			# Using a burner with no future shells is guaranteed to not give information.
+			bMissChance = 1.0
+			bLiveChance = 0.0
+			bBlankChance = 0.0
+		else:
+			bMissChance = (tempStates.futureBlank+tempStates.futureLive) / futureShellCount
+			bLiveChance = (liveCount - uninvertedFirstLiveChance - tempStates.futureLive) / futureShellCount
+			bBlankChance = (blankCount - (1-uninvertedFirstLiveChance) - tempStates.futureBlank) / futureShellCount
 
 		options[OPTION_BURNER] = Result.new(OPTION_BURNER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 

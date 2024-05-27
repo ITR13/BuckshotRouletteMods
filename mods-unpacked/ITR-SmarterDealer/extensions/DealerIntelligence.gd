@@ -70,7 +70,7 @@ func createPlayer(player_index, itemArray):
 	)
 
 
-var prevWonRounds = -1
+var lastCommentedRound = -1
 var inverted_shell = false
 var adrenaline = false
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
@@ -167,19 +167,13 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	)
 	ModLoaderLog.info("%s" % result, "ITR-SmarterDealer")
 
-	# Disabled until I figure out how A: roundManager.wonRounds doesn't exist, and B: How the code works in spite of this
-	# if prevWonRounds != roundManager.wonRounds:
-	# 	prevWonRounds = roundManager.wonRounds
-	# 	CommentOnChance(result.deathChance[0], result.deathChance[1])
+	CommentOnChance(result.deathChance[0], result.deathChance[1])
 
 	# Return the result, you might want to handle the result accordingly
 	return result.option
 
-var commentDelay = 3
 func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 	var texts: Array
-
-	commentDelay -= 1
 
 	if playerDeathChance >= 0.65:
 		texts = [
@@ -243,11 +237,11 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 
 	texts.shuffle()
 	print(texts[0])
-	if commentDelay > 0:
+	if roundManager.currentRound == lastCommentedRound:
 		print("Comment skipped")
 		return
 
-	commentDelay = 3
+	lastCommentedRound = roundManager.currentRound
 
 	shellLoader.dialogue.ShowText_Forever(texts[0])
 	await get_tree().create_timer(2.3, false).timeout

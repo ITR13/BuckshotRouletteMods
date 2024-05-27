@@ -637,8 +637,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			var blankBeerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
 			options[OPTION_BEER].mutAdd(blankBeerResult.mult(blankChance))
 
-	# Dealer isn't allowed to eat medicine on 1 health left... for some reason
-	if itemFrom.medicine > 0 and (player.player_index == 0 or player.health > 1):
+	if itemFrom.medicine > 0:
 		var medicinePlayer := player.use("medicine", 0 if tempStates.adrenaline else 1)
 		var medicineOpponent := opponent.use("medicine", 1 if tempStates.adrenaline else 0)
 

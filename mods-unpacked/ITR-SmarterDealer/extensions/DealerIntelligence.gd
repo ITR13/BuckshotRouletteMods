@@ -391,4 +391,13 @@ func DealerChoice()->void:
 	knownShell = ""
 	dealerKnowsShell = false
 	inverted_shell = false
+
+	# Make the barrel regrow after the dealer shoots himself, to be consistent with the player. (This case just never comes up with the vanilla AI.)
+	if (roundManager.barrelSawedOff && dealerTarget == "self"):
+		if (dealerHoldingShotgun):
+			animator_shotgun.play("enemy put down shotgun")
+			shellLoader.DealerHandsDropShotgun()
+		await get_tree().create_timer(.6, false).timeout
+		await(roundManager.segmentManager.GrowBarrel())
+
 	return

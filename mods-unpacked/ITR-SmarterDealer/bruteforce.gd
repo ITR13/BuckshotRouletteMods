@@ -744,7 +744,9 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootLive.mult(liveChance))
 
 	if blankChance > 0:
-		var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, tempStates.SkipBullet())
+		var selfShootState := tempStates.SkipBullet()
+		selfShootState.usedHandsaw = false
+		var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, selfShootState)
 
 		var resultIfShootBlank := Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 		if tempStates.handcuffState <= HANDCUFF_FREENEXT:

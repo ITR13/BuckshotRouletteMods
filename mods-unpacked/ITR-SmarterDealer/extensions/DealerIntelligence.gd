@@ -70,7 +70,6 @@ func createPlayer(player_index, itemArray):
 	)
 
 
-var lastCommentedRound = -1
 var inverted_shell = false
 var adrenaline = false
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
@@ -172,6 +171,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	# Return the result, you might want to handle the result accordingly
 	return result.option
 
+var commentedThisTurn := false
 func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 	var texts: Array
 
@@ -237,11 +237,11 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 
 	texts.shuffle()
 	print(texts[0])
-	if roundManager.currentRound == lastCommentedRound:
+	if commentedThisTurn:
 		print("Comment skipped")
 		return
 
-	lastCommentedRound = roundManager.currentRound
+	commentedThisTurn = true
 
 	shellLoader.dialogue.ShowText_Forever(texts[0])
 	await get_tree().create_timer(2.3, false).timeout
@@ -401,3 +401,13 @@ func DealerChoice()->void:
 		await(roundManager.segmentManager.GrowBarrel())
 
 	return
+
+func EndTurnMain():
+	commentedThisTurn = false
+	await get_tree().create_timer(.5, false).timeout
+	camera.BeginLerp("home")
+	if (dealerHoldingShotgun):
+		animator_shotgun.play("enemy put down shotgun")
+		shellLoader.DealerHandsDropShotgun()
+	dealerHoldingShotgun = false
+	roundManager.EndTurn(true)

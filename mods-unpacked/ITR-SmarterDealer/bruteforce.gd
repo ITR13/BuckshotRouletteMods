@@ -58,7 +58,7 @@ class Result:
 		self.healthScore.assign(healthScore)
 		self.itemScore.assign(itemScore)
 
-	func mult(multiplier):
+	func mult(multiplier: float):
 		return Result.new(
 			self.option,
 			[multiplier*self.deathChance[0], multiplier*self.deathChance[1]],

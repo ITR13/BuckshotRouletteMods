@@ -216,7 +216,7 @@ class BruteforcePlayer:
 
 		# Player 0 can consume cigarettes next turn, so saving them makes you less likely to draw more cigarettes
 		var cigaretteMultiplier = 1 if freeSlots < 4 else 2
-		var score: int = 0
+		var score: float = 0
 		score += itemScoreArray[OPTION_MAGNIFY][self.magnify]
 		score += itemScoreArray[OPTION_BEER][self.beer]
 		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes] * cigaretteMultiplier

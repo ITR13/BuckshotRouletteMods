@@ -351,6 +351,10 @@ class TempStates:
 	func Invert()->TempStates:
 		var other: TempStates = self.clone()
 		other.inverted = not other.inverted
+		if self.magnifyingGlassResult == MAGNIFYING_LIVE:
+			other.magnifyingGlassResult = MAGNIFYING_BLANK
+		elif self.magnifyingGlassResult == MAGNIFYING_BLANK:
+			other.magnifyingGlassResult = MAGNIFYING_LIVE
 		other.adrenaline = false
 		return other
 
@@ -485,9 +489,6 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	if cache.has(ahash) and not isTopLayer:
 		return cache[ahash].clone()
 
-	# Double or nothing round has special logic
-	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING and player.player_index == 1
-
 	if liveCount == 0 and blankCount == 0:
 		var deathChance: Array[float] = [0.0, 0.0]
 
@@ -524,11 +525,12 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	var originalRemove := 1
 	var invertedRemove := 0
 	if tempStates.inverted:
-		var temp = liveChance
-		liveChance = blankChance
-		blankChance = temp
 		originalRemove = 0
 		invertedRemove = 1
+		if tempStates.magnifyingGlassResult == MAGNIFYING_NONE:
+			var temp = liveChance
+			liveChance = blankChance
+			blankChance = temp
 
 	# Some hard-coded kills to speed up:
 	if player.player_index == 1:

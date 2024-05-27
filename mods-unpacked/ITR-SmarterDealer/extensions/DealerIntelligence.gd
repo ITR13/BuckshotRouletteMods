@@ -131,7 +131,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			shell = Bruteforce.MAGNIFYING_BLANK
 	else:
 		if dealerKnowsShell or sequenceArray_knownShell[0] or liveUnknown == 0 or blankUnknown == 0:
-			shell = Bruteforce.MAGNIFYING_LIVE if (shellSpawner.sequenceArray[0] == "live") != inverted_shell else Bruteforce.MAGNIFYING_BLANK
+			shell = Bruteforce.MAGNIFYING_LIVE if shellSpawner.sequenceArray[0] == "live" else Bruteforce.MAGNIFYING_BLANK
 
 	var playerHandcuffState = Bruteforce.HANDCUFF_NONE
 	if isPlayer:

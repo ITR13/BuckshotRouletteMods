@@ -248,6 +248,12 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 	shellLoader.dialogue.HideText()
 
 func DealerChoice()->void:
+	# Check if the dealer is dead, to cover the case where the dealer takes expired medicine on 1 health. (Which then leads to calling DealerChoice again.)
+	if roundManager.health_opponent <= 0:
+		roundManager.OutOfHealth("dealer")
+		healthCounter.UpdateDisplayRoutine(false, false, true)
+		return
+
 	if (roundManager.requestedWireCut):
 		await(roundManager.defibCutter.CutWire(roundManager.wireToCut))
 	if adrenaline:

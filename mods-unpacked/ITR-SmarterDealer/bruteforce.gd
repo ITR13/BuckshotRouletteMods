@@ -459,7 +459,7 @@ static func sum_array(array)->float:
 
 static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blankCount: int, liveCount_max: int, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates, isTopLayer:=false)->Result:
 	if player.health <= 0 or opponent.health <= 0:
-		var deadPlayerIs0 = (player.player_index if player.health == 0 else opponent.player_index) == 0
+		var deadPlayerIs0 = (player.player_index if player.health <= 0 else opponent.player_index) == 0
 
 		var deathScore := [1.0, 0.0] if deadPlayerIs0 else [0.0, 1.0]
 

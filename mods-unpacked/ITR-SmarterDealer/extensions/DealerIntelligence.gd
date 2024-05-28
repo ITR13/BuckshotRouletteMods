@@ -386,11 +386,13 @@ func DealerChoice()->void:
 		await get_tree().create_timer(1.4 + .5 - 1, false).timeout
 	await get_tree().create_timer(1, false).timeout
 	print("Dealer shoots "+dealerTarget)
+	var firedLive := shellSpawner.sequenceArray[0] == "live"
 	Shoot(dealerTarget)
-	commentedThisTurn = false
 
+	if dealerTarget == "player || firedLive:
+		commentedThisTurn = false
 	# Make the barrel regrow after the dealer shoots himself, to be consistent with the player. (This case just never comes up with the vanilla AI.)
-	if (roundManager.barrelSawedOff && dealerTarget == "self"):
+	if (roundManager.barrelSawedOff && dealerTarget == "self" && not firedLive):
 		if (dealerHoldingShotgun):
 			animator_shotgun.play("enemy put down shotgun")
 			shellLoader.DealerHandsDropShotgun()

@@ -731,10 +731,10 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			var missResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
 			options[OPTION_BURNER].mutAdd(missResult.mult(bMissChance))
 		if bLiveChance > 0:
-			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 1))
+			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
 			options[OPTION_BURNER].mutAdd(liveResult.mult(bLiveChance))
 		if bBlankChance > 0:
-			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
+			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 1))
 			options[OPTION_BURNER].mutAdd(blankResult.mult(bBlankChance))
 
 	var damageToDeal := 2 if tempStates.usedHandsaw else 1

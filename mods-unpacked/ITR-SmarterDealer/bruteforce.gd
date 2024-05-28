@@ -386,10 +386,12 @@ class TempStates:
 
 
 	func do_hash(num: int, liveCount_max: int)->int:
-		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 4
+		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 8
 		if self.usedHandsaw:
-			num += 2
+			num += 4
 		if self.inverted:
+			num += 2
+		if self.adrenaline:
 			num += 1
 		num *= (liveCount_max+1)
 		num += self.futureLive

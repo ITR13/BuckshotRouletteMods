@@ -93,7 +93,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 				blankUnknown += 1
 
 	var roundType = Bruteforce.ROUNDTYPE_NORMAL
-	if roundManager.defibCutterReady && !roundManager.endless:
+	if roundManager.defibCutterReady and !roundManager.endless:
 		roundType = Bruteforce.ROUNDTYPE_WIRECUT
 	elif roundManager.playerData.currentBatchIndex == 2:
 		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
@@ -389,10 +389,10 @@ func DealerChoice()->void:
 	var firedLive := shellSpawner.sequenceArray[0] == "live"
 	Shoot(dealerTarget)
 
-	if dealerTarget == "player || firedLive:
+	if dealerTarget == "player" or firedLive:
 		commentedThisTurn = false
 	# Make the barrel regrow after the dealer shoots himself, to be consistent with the player. (This case just never comes up with the vanilla AI.)
-	if (roundManager.barrelSawedOff && dealerTarget == "self" && not firedLive):
+	if roundManager.barrelSawedOff and dealerTarget == "self" and not firedLive:
 		if (dealerHoldingShotgun):
 			animator_shotgun.play("enemy put down shotgun")
 			shellLoader.DealerHandsDropShotgun()

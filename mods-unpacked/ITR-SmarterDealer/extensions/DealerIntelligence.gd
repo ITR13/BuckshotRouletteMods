@@ -384,6 +384,9 @@ func DealerChoice()->void:
 		DealerChoice()
 		return
 
+	if shellSpawner.sequenceArray[0] == "live" or dealerTarget == "player":
+		commentedThisTurn = false
+
 	# shoot
 	if (roundManager.waitingForDealerReturn):
 		await get_tree().create_timer(1.8, false).timeout
@@ -392,22 +395,41 @@ func DealerChoice()->void:
 		await get_tree().create_timer(1.4 + .5 - 1, false).timeout
 	await get_tree().create_timer(1, false).timeout
 	print("Dealer shoots "+dealerTarget)
-	var firedLive := shellSpawner.sequenceArray[0] == "live"
 	Shoot(dealerTarget)
-
-	if dealerTarget == "player" or firedLive:
-		commentedThisTurn = false
-	# Make the barrel regrow after the dealer shoots himself, to be consistent with the player. (This case just never comes up with the vanilla AI.)
-	if roundManager.barrelSawedOff and dealerTarget == "self" and not firedLive:
-		if (dealerHoldingShotgun):
-			animator_shotgun.play("enemy put down shotgun")
-			shellLoader.DealerHandsDropShotgun()
-		await get_tree().create_timer(.6, false).timeout
-		await(roundManager.segmentManager.GrowBarrel())
-
 	dealerTarget = ""
 	knownShell = ""
 	dealerKnowsShell = false
 	inverted_shell = false
-
 	return
+
+func EndDealerTurn(canDealerGoAgain : bool):
+	dealerCanGoAgain = canDealerGoAgain
+	#USINGITEMS: ASSIGN DEALER CAN GO AGAIN FROM ITEMS HERE
+	#CHECK IF OUT OF HEALTH
+	var outOfHealth_player = roundManager.health_player == 0
+	var outOfHealth_enemy = roundManager.health_opponent == 0
+	var outOfHealth = outOfHealth_player or outOfHealth_enemy
+	if (outOfHealth):
+		#if (outOfHealth_player): roundManager.OutOfHealth("player")
+		if (outOfHealth_enemy):	roundManager.OutOfHealth("dealer")
+		return
+
+	if (!dealerCanGoAgain):
+		EndTurnMain()
+	else:
+		if (shellSpawner.sequenceArray.size()):
+			# If the dealer shot himself with a sawed-off shotgun, reset the barrel by effectively calling EndTurnMain, but passing control back to the dealer instead of the player.
+			if roundManager.barrelSawedOff:
+				await get_tree().create_timer(.5, false).timeout
+				camera.BeginLerp("home")
+				if (dealerHoldingShotgun):
+					animator_shotgun.play("enemy put down shotgun")
+					shellLoader.DealerHandsDropShotgun()
+				dealerHoldingShotgun = false
+				await get_tree().create_timer(1, false).timeout
+				roundManager.EndTurn(false)
+			else:
+				BeginDealerTurn()
+		else:
+			EndTurnMain()
+	pass

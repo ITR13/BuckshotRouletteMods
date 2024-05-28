@@ -417,6 +417,7 @@ class TempStates:
 # liveCount and blankCount both contain the count of bullets without considering the effect of active inverters.
 # tempStates.magnifyingGlassResult does consider the effect of active inverters.
 static var printOptions = false
+static var enableDebugTrace = false
 static var cachedGame: BruteforceGame = null
 static var cache = {}
 static func GetBestChoiceAndDamage(roundType: int, liveCount: int, blankCount: int, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates):
@@ -775,9 +776,10 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))
 
 
-	if printOptions and isTopLayer:
+	if (printOptions and isTopLayer) or enableDebugTrace:
 		print(options, " (", ahash, ")")
-		# print(player, " ", opponent, " ", tempStates)
+	if enableDebugTrace:
+		print("%s Live, %s Blank\n%s\n%s\n%s" % [liveCount, blankCount, player, opponent, tempStates])
 
 	var current: Result = null
 	var results: Array[Result] = []

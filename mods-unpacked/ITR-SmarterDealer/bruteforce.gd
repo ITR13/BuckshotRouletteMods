@@ -32,17 +32,17 @@ const ROUNDTYPE_DOUBLEORNOTHING = 2
 
 const itemScoreArray = [
 	[], [], [], # Skip none, shoot self, shoot other
-	# 0    1    2    3    4    5    6     7    8
-	[ 0.0, 1.5, 3.0, 4.0 , 4.5, 5.0 , 6.5 , 6.8, 7.0  ], # Magnify
-	[ 0.0, 0.5, 1.0, 1.2 , 1.2, 1.2 , 1.2 , 1.2, 1.2  ], # Cigarette
-	[ 0.0, 1.0, 2.0, 3.0 , 3.5, 4.0 , 4.25, 4.5, 4.75 ], # Beer
-	[ 0.0, 1.2, 2.0, 2.5 , 2.6, 2.7 , 2.8 , 2.9, 3.0  ], # Handcuff
-	[ 0.0, 1.5, 2.6, 3.1 , 3.5, 3.6 , 3.7 , 3.8, 3.9  ], # Handsaw
-	[ 0.0, 0.3, 0.6, 0.7 , 0.8, 0.9 , 0.95, 1.0, 1.05 ], # Expired Medicine
-	[ 0.0, 1.2, 2.4, 3.3 , 3.7, 4.1 , 4.5 , 4.9, 5.4  ], # Inverter
-	[ 0.0, 1.4, 2.8, 2.75, 2.7, 2.65, 2.6 , 2.5, 2.4  ], # Burner Phone
-	[ 0.0, 2.0, 4.0, 5.5 , 7.0, 8.0 , 9.0 , 9.5, 10   ], # Adrenaline
-	[ 0.0, 1.0, 2.0, 2.6 , 3.0, 3.0 , 3.0 , 3.0, 3.0, ], # FreeSlots
+	# 0    1    2    3     4     5     6     7    8
+	[ 0.0, 1.5, 3.0, 4.0 , 4.5 , 5.0 , 6.5 , 6.8, 7.0  ], # Magnify
+	[ 0.0, 0.5, 1.0, 1.2 , 1.2 , 1.2 , 1.2 , 1.2, 1.2  ], # Cigarette
+	[ 0.0, 1.0, 2.0, 3.0 , 3.5 , 4.0 , 4.25, 4.5, 4.75 ], # Beer
+	[ 0.0, 1.2, 2.0, 2.5 , 2.6 , 2.7 , 2.8 , 2.9, 3.0  ], # Handcuff
+	[ 0.0, 1.5, 2.6, 3.1 , 3.5 , 3.6 , 3.7 , 3.8, 3.9  ], # Handsaw
+	[ 0.0, 0.3, 0.6, 0.7 , 0.8 , 0.9 , 0.95, 1.0, 1.05 ], # Expired Medicine
+	[ 0.0, 1.2, 2.4, 3.3 , 3.7 , 4.1 , 4.5 , 4.9, 5.4  ], # Inverter
+	[ 0.0, 1.4, 2.8, 2.75, 2.7 , 2.65, 2.6 , 2.5, 2.4  ], # Burner Phone
+	[ 0.0, 2.0, 4.0, 5.5 , 7.0 , 8.0 , 9.0 , 9.5, 10.0 ], # Adrenaline
+	[ 0.0, 1.0, 2.0, 2.75, 3.25, 3.5 , 3.5 , 3.5, 3.5, ], # FreeSlots
 ]
 
 class Result:
@@ -214,12 +214,10 @@ class BruteforcePlayer:
 		var totalItems = self.count_items()
 		var freeSlots = 8 - totalItems
 
-		# Player 0 can consume cigarettes next turn, so saving them makes you less likely to draw more cigarettes
-		var cigaretteMultiplier = 1 if freeSlots < 4 else 2
 		var score: float = 0
 		score += itemScoreArray[OPTION_MAGNIFY][self.magnify]
 		score += itemScoreArray[OPTION_BEER][self.beer]
-		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes] * cigaretteMultiplier
+		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes]
 		score += itemScoreArray[OPTION_HANDSAW][self.handsaw]
 		score += itemScoreArray[OPTION_HANDCUFFS][self.handcuffs]
 		score += itemScoreArray[OPTION_MEDICINE][self.medicine]

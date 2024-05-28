@@ -210,7 +210,7 @@ class BruteforcePlayer:
 		copy.adrenaline = other.adrenaline
 		return copy
 
-	func sum_items()->int:
+	func sum_items()->float:
 		var totalItems = self.count_items()
 		var freeSlots = 8 - totalItems
 

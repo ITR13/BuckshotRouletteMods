@@ -171,11 +171,13 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	# Return the result, you might want to handle the result accordingly
 	return result.option
 
-var commentedThisTurn := false
+var lastCommentType = ""
 func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
+	var commentType: String
 	var texts: Array
 
 	if playerDeathChance >= 0.65:
+		commentType = "player_danger"
 		texts = [
 			"say hello to god",
 			"greet god from me",
@@ -196,6 +198,7 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 			"the end draws near",
 		]
 	elif dealerDeathChance >= 0.65:
+		commentType = "dealer_danger"
 		texts = [
 			"this isn't looking\nvery poggers",
 			"this is the end for me",
@@ -217,6 +220,7 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 			"defiance in the face of doom",
 		]
 	elif playerDeathChance >= 0.4 and dealerDeathChance >= 0.4:
+		commentType = "fifty_fifty"
 		texts = [
 			"now we both dance on the\nedge of life and death",
 			"it's showdown time",
@@ -237,11 +241,11 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 
 	texts.shuffle()
 	print(texts[0])
-	if commentedThisTurn:
+	if commentType == lastCommentType:
 		print("Comment skipped")
 		return
 
-	commentedThisTurn = true
+	lastCommentType = commentType
 
 	shellLoader.dialogue.ShowText_Forever(texts[0])
 	await get_tree().create_timer(2.3, false).timeout
@@ -384,8 +388,9 @@ func DealerChoice()->void:
 		DealerChoice()
 		return
 
-	if shellSpawner.sequenceArray[0] == "live" or dealerTarget == "player":
-		commentedThisTurn = false
+	# When the dealer shoots to end his turn, reset his last comment type so he can make any comment next turn.
+	if (shellSpawner.sequenceArray[0] == "live" or dealerTarget == "player") and not (roundManager.playerCuffed and not roundManager.playerAboutToBreakFree):
+		lastCommentType = ""
 
 	# shoot
 	if (roundManager.waitingForDealerReturn):

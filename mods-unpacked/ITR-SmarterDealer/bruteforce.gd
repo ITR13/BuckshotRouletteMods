@@ -414,7 +414,7 @@ class TempStates:
 
 # liveCount and blankCount both contain the count of bullets without considering the effect of active inverters.
 # tempStates.magnifyingGlassResult does consider the effect of active inverters.
-static var printOptions = false
+static var printOptions = true
 static var enableDebugTrace = false
 static var cachedGame: BruteforceGame = null
 static var cache = {}

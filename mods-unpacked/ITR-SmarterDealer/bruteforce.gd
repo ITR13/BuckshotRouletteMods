@@ -499,14 +499,21 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		health[player.player_index] = player.health
 		health[opponent.player_index] = opponent.health
 
-		var itemscore: Array[float] = [0.0, 0.0]
-		itemscore[player.player_index] = player.sum_items()
-		itemscore[opponent.player_index] = opponent.sum_items()
+		var itemScore: Array[float] = [0.0, 0.0]
+		itemScore[player.player_index] = player.sum_items()
+		itemScore[opponent.player_index] = opponent.sum_items()
 
+		# The player can always smoke at the beginning of the next round if they don't die this round.
+		# (The same isn't true for the dealer, who could be killed before he can take a turn.)
+		# Count the health and item scores for the player using their cigarettes at the beginning of the next round, but
+		# don't give them the extra FreeSlots value. (The cigarettes are still occupying a slot during item distribution.)
 		var startingPlayer = player if player.player_index == 0 else opponent
-		var otherPlayer = player if player.player_index == 1 else opponent
+		var smokeAmount: int = min(startingPlayer.cigarettes, startingPlayer.max_health - startingPlayer.health)
+		health[0] += smokeAmount
+		itemScore[0] -= itemScoreArray[OPTION_CIGARETTES][startingPlayer.cigarettes]
+		itemScore[0] += itemScoreArray[OPTION_CIGARETTES][startingPlayer.cigarettes - smokeAmount]
 
-		var result = Result.new(OPTION_NONE, deathChance, health, itemscore)
+		var result = Result.new(OPTION_NONE, deathChance, health, itemScore)
 		cache[ahash] = result
 		return result.clone()
 

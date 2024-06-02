@@ -735,7 +735,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_BURNER] = Result.new(OPTION_BURNER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
 		if bMissChance > 0:
-			var missResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
+			var missResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 0))
 			options[OPTION_BURNER].mutAdd(missResult.mult(bMissChance))
 		if bLiveChance > 0:
 			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))

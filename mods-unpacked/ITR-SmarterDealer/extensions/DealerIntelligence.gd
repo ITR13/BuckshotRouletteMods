@@ -109,7 +109,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var totalShells = shellSpawner.sequenceArray.size()
 
 	# Some probably dumb plays to prevent the AI from spending ages thinking
-	if itemsInPlay >= 12 and totalShells > 4:
+	if itemsInPlay + totalShells >= 16:
 		var check = player if isPlayer else dealer
 
 		if check.burner > 0:

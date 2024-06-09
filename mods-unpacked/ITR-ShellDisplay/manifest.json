@@ -1,7 +1,7 @@
 {
 	"name": "ShellDisplay",
 	"namespace": "ITR",
-	"version_number": "1.0.0",
+	"version_number": "1.0.1",
 	"description": "Shows the remaining amount of shells in the top right courner",
 	"dependencies": [],
 	"website_url": "",

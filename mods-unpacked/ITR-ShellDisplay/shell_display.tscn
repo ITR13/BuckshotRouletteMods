@@ -1,10 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://qketxbi48xtw"]
+[gd_scene load_steps=6 format=3 uid="uid://qketxbi48xtw"]
 
 [ext_resource type="Texture2D" uid="uid://bg0hg0r61w2d0" path="res://mods-unpacked/ITR-ShellDisplay/live_sprite.png" id="1_fl0eo"]
 [ext_resource type="Script" path="res://mods-unpacked/ITR-ShellDisplay/shell_display.gd" id="1_ib4cg"]
 [ext_resource type="Texture2D" uid="uid://ccqcwqsb22nxh" path="res://mods-unpacked/ITR-ShellDisplay/blank_sprite.png" id="2_4jau1"]
+[ext_resource type="Texture2D" uid="uid://ps3acat3orrt" path="res://mods-unpacked/ITR-ShellDisplay/live_sprite_cb.png" id="4_af6yx"]
+[ext_resource type="Texture2D" uid="uid://cjy3arjprrp6o" path="res://mods-unpacked/ITR-ShellDisplay/blank_sprite_cb.png" id="5_ndk0c"]
 
-[node name="Control" type="Control" node_paths=PackedStringArray("shownLive", "shownBlank")]
+[node name="Control" type="Control" node_paths=PackedStringArray("shownLive", "shownBlank", "shownLiveCb", "shownBlankCb", "cbShells", "otherShells")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,10 +16,23 @@ offset_right = 0.0349731
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_ib4cg")
-shownLive = [NodePath("shell sprite parent/live shell sprite"), NodePath("shell sprite parent/live shell sprite2"), NodePath("shell sprite parent/live shell sprite3"), NodePath("shell sprite parent/live shell sprite4")]
-shownBlank = [NodePath("shell sprite parent2/blank shell sprite"), NodePath("shell sprite parent2/blank shell sprite2"), NodePath("shell sprite parent2/blank shell sprite3"), NodePath("shell sprite parent2/blank shell sprite4")]
+shownLive = [NodePath("Other/shell sprite parent/live shell sprite"), NodePath("Other/shell sprite parent/live shell sprite2"), NodePath("Other/shell sprite parent/live shell sprite3"), NodePath("Other/shell sprite parent/live shell sprite4")]
+shownBlank = [NodePath("Other/shell sprite parent2/blank shell sprite"), NodePath("Other/shell sprite parent2/blank shell sprite2"), NodePath("Other/shell sprite parent2/blank shell sprite3"), NodePath("Other/shell sprite parent2/blank shell sprite4")]
+shownLiveCb = [NodePath("Colorblind/shell sprite parent3/live shell sprite"), NodePath("Colorblind/shell sprite parent3/live shell sprite2"), NodePath("Colorblind/shell sprite parent3/live shell sprite3"), NodePath("Colorblind/shell sprite parent3/live shell sprite4")]
+shownBlankCb = [NodePath("Colorblind/shell sprite parent4/blank shell sprite"), NodePath("Colorblind/shell sprite parent4/blank shell sprite2"), NodePath("Colorblind/shell sprite parent4/blank shell sprite3"), NodePath("Colorblind/shell sprite parent4/blank shell sprite4")]
+cbShells = NodePath("Colorblind")
+otherShells = NodePath("Other")
 
-[node name="shell sprite parent" type="GridContainer" parent="."]
+[node name="Other" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="shell sprite parent" type="GridContainer" parent="Other"]
 z_index = 10
 layout_direction = 3
 layout_mode = 1
@@ -36,27 +51,25 @@ theme_override_constants/h_separation = 15
 theme_override_constants/v_separation = 35
 columns = 4
 
-[node name="live shell sprite" type="TextureRect" parent="shell sprite parent"]
+[node name="live shell sprite" type="TextureRect" parent="Other/shell sprite parent"]
+layout_mode = 2
+texture = ExtResource("1_fl0eo")
+
+[node name="live shell sprite2" type="TextureRect" parent="Other/shell sprite parent"]
+layout_mode = 2
+texture = ExtResource("1_fl0eo")
+
+[node name="live shell sprite3" type="TextureRect" parent="Other/shell sprite parent"]
 visible = false
 layout_mode = 2
 texture = ExtResource("1_fl0eo")
 
-[node name="live shell sprite2" type="TextureRect" parent="shell sprite parent"]
+[node name="live shell sprite4" type="TextureRect" parent="Other/shell sprite parent"]
 visible = false
 layout_mode = 2
 texture = ExtResource("1_fl0eo")
 
-[node name="live shell sprite3" type="TextureRect" parent="shell sprite parent"]
-visible = false
-layout_mode = 2
-texture = ExtResource("1_fl0eo")
-
-[node name="live shell sprite4" type="TextureRect" parent="shell sprite parent"]
-visible = false
-layout_mode = 2
-texture = ExtResource("1_fl0eo")
-
-[node name="shell sprite parent2" type="GridContainer" parent="."]
+[node name="shell sprite parent2" type="GridContainer" parent="Other"]
 z_index = 10
 layout_direction = 3
 layout_mode = 1
@@ -75,22 +88,105 @@ theme_override_constants/h_separation = 15
 theme_override_constants/v_separation = 35
 columns = 4
 
-[node name="blank shell sprite" type="TextureRect" parent="shell sprite parent2"]
+[node name="blank shell sprite" type="TextureRect" parent="Other/shell sprite parent2"]
+layout_mode = 2
+texture = ExtResource("2_4jau1")
+
+[node name="blank shell sprite2" type="TextureRect" parent="Other/shell sprite parent2"]
+layout_mode = 2
+texture = ExtResource("2_4jau1")
+
+[node name="blank shell sprite3" type="TextureRect" parent="Other/shell sprite parent2"]
 visible = false
 layout_mode = 2
 texture = ExtResource("2_4jau1")
 
-[node name="blank shell sprite2" type="TextureRect" parent="shell sprite parent2"]
+[node name="blank shell sprite4" type="TextureRect" parent="Other/shell sprite parent2"]
 visible = false
 layout_mode = 2
 texture = ExtResource("2_4jau1")
 
-[node name="blank shell sprite3" type="TextureRect" parent="shell sprite parent2"]
+[node name="Colorblind" type="Control" parent="."]
 visible = false
-layout_mode = 2
-texture = ExtResource("2_4jau1")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="blank shell sprite4" type="TextureRect" parent="shell sprite parent2"]
+[node name="shell sprite parent3" type="GridContainer" parent="Colorblind"]
+z_index = 10
+layout_direction = 3
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 20.0
+offset_bottom = 378.0
+grow_horizontal = 2
+scale = Vector2(0.15, 0.15)
+pivot_offset = Vector2(964, 0)
+size_flags_horizontal = 2
+size_flags_vertical = 10
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 35
+columns = 4
+
+[node name="live shell sprite" type="TextureRect" parent="Colorblind/shell sprite parent3"]
+layout_mode = 2
+texture = ExtResource("4_af6yx")
+
+[node name="live shell sprite2" type="TextureRect" parent="Colorblind/shell sprite parent3"]
 visible = false
 layout_mode = 2
-texture = ExtResource("2_4jau1")
+texture = ExtResource("4_af6yx")
+
+[node name="live shell sprite3" type="TextureRect" parent="Colorblind/shell sprite parent3"]
+visible = false
+layout_mode = 2
+texture = ExtResource("4_af6yx")
+
+[node name="live shell sprite4" type="TextureRect" parent="Colorblind/shell sprite parent3"]
+visible = false
+layout_mode = 2
+texture = ExtResource("4_af6yx")
+
+[node name="shell sprite parent4" type="GridContainer" parent="Colorblind"]
+z_index = 10
+layout_direction = 3
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 20.0
+offset_bottom = 438.0
+grow_horizontal = 2
+scale = Vector2(0.15, 0.15)
+pivot_offset = Vector2(964, 0)
+size_flags_horizontal = 2
+size_flags_vertical = 10
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 35
+columns = 4
+
+[node name="blank shell sprite" type="TextureRect" parent="Colorblind/shell sprite parent4"]
+layout_mode = 2
+texture = ExtResource("5_ndk0c")
+
+[node name="blank shell sprite2" type="TextureRect" parent="Colorblind/shell sprite parent4"]
+visible = false
+layout_mode = 2
+texture = ExtResource("5_ndk0c")
+
+[node name="blank shell sprite3" type="TextureRect" parent="Colorblind/shell sprite parent4"]
+visible = false
+layout_mode = 2
+texture = ExtResource("5_ndk0c")
+
+[node name="blank shell sprite4" type="TextureRect" parent="Colorblind/shell sprite parent4"]
+visible = false
+layout_mode = 2
+texture = ExtResource("5_ndk0c")

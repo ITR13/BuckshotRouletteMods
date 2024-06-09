@@ -70,17 +70,11 @@ func createPlayer(player_index, itemArray):
 	)
 
 
-var prevBatchIndex = -1
-var prevWonRounds = -1
 var inverted_shell = false
 var adrenaline = false
 func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	if (shellSpawner.sequenceArray.size() == 0):
 		return Bruteforce.OPTION_NONE
-
-	if roundManager.playerData.currentBatchIndex != prevBatchIndex:
-		Bruteforce.RandomizeDealer()
-		prevBatchIndex = roundManager.playerData.currentBatchIndex
 
 	var liveCount = 0
 	var blankCount = 0
@@ -99,7 +93,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 				blankUnknown += 1
 
 	var roundType = Bruteforce.ROUNDTYPE_NORMAL
-	if roundManager.defibCutterReady && !roundManager.endless:
+	if roundManager.defibCutterReady and !roundManager.endless:
 		roundType = Bruteforce.ROUNDTYPE_WIRECUT
 	elif roundManager.playerData.currentBatchIndex == 2:
 		roundType = Bruteforce.ROUNDTYPE_DOUBLEORNOTHING
@@ -115,7 +109,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var totalShells = shellSpawner.sequenceArray.size()
 
 	# Some probably dumb plays to prevent the AI from spending ages thinking
-	if itemsInPlay >= 12 and totalShells > 4:
+	if itemsInPlay + totalShells >= 16:
 		var check = player if isPlayer else dealer
 
 		if check.burner > 0:
@@ -136,7 +130,7 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 			shell = Bruteforce.MAGNIFYING_BLANK
 	else:
 		if dealerKnowsShell or sequenceArray_knownShell[0] or liveUnknown == 0 or blankUnknown == 0:
-			shell = Bruteforce.MAGNIFYING_LIVE if (shellSpawner.sequenceArray[0] == "live") != inverted_shell else Bruteforce.MAGNIFYING_BLANK
+			shell = Bruteforce.MAGNIFYING_LIVE if shellSpawner.sequenceArray[0] == "live" else Bruteforce.MAGNIFYING_BLANK
 
 	var playerHandcuffState = Bruteforce.HANDCUFF_NONE
 	if isPlayer:
@@ -172,21 +166,18 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	)
 	ModLoaderLog.info("%s" % result, "ITR-SmarterDealer")
 
-	# Disabled until I figure out how A: roundManager.wonRounds doesn't exist, and B: How the code works in spite of this
-	# if prevWonRounds != roundManager.wonRounds:
-	# 	prevWonRounds = roundManager.wonRounds
-	# 	CommentOnChance(result.deathChance[0], result.deathChance[1])
+	CommentOnChance(result.deathChance[0], result.deathChance[1])
 
 	# Return the result, you might want to handle the result accordingly
 	return result.option
 
-var commentDelay = 3
+var lastCommentType = ""
 func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
+	var commentType: String
 	var texts: Array
 
-	commentDelay -= 1
-
 	if playerDeathChance >= 0.65:
+		commentType = "player_danger"
 		texts = [
 			"say hello to god",
 			"greet god from me",
@@ -207,6 +198,7 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 			"the end draws near",
 		]
 	elif dealerDeathChance >= 0.65:
+		commentType = "dealer_danger"
 		texts = [
 			"this isn't looking\nvery poggers",
 			"this is the end for me",
@@ -228,6 +220,7 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 			"defiance in the face of doom",
 		]
 	elif playerDeathChance >= 0.4 and dealerDeathChance >= 0.4:
+		commentType = "fifty_fifty"
 		texts = [
 			"now we both dance on the\nedge of life and death",
 			"it's showdown time",
@@ -248,17 +241,23 @@ func CommentOnChance(playerDeathChance: float, dealerDeathChance: float):
 
 	texts.shuffle()
 	print(texts[0])
-	if commentDelay > 0:
+	if commentType == lastCommentType:
 		print("Comment skipped")
 		return
 
-	commentDelay = 3
+	lastCommentType = commentType
 
 	shellLoader.dialogue.ShowText_Forever(texts[0])
 	await get_tree().create_timer(2.3, false).timeout
 	shellLoader.dialogue.HideText()
 
 func DealerChoice()->void:
+	# Check if the dealer is dead, to cover the case where the dealer takes expired medicine on 1 health. (Which then leads to calling DealerChoice again.)
+	if roundManager.health_opponent <= 0:
+		roundManager.OutOfHealth("dealer")
+		healthCounter.UpdateDisplayRoutine(false, false, true)
+		return
+
 	if (roundManager.requestedWireCut):
 		await(roundManager.defibCutter.CutWire(roundManager.wireToCut))
 	if adrenaline:
@@ -389,6 +388,10 @@ func DealerChoice()->void:
 		DealerChoice()
 		return
 
+	# When the dealer shoots to end his turn, reset his last comment type so he can make any comment next turn.
+	if (shellSpawner.sequenceArray[0] == "live" or dealerTarget == "player") and not (roundManager.playerCuffed and not roundManager.playerAboutToBreakFree):
+		lastCommentType = ""
+
 	# shoot
 	if (roundManager.waitingForDealerReturn):
 		await get_tree().create_timer(1.8, false).timeout
@@ -403,3 +406,35 @@ func DealerChoice()->void:
 	dealerKnowsShell = false
 	inverted_shell = false
 	return
+
+func EndDealerTurn(canDealerGoAgain : bool):
+	dealerCanGoAgain = canDealerGoAgain
+	#USINGITEMS: ASSIGN DEALER CAN GO AGAIN FROM ITEMS HERE
+	#CHECK IF OUT OF HEALTH
+	var outOfHealth_player = roundManager.health_player == 0
+	var outOfHealth_enemy = roundManager.health_opponent == 0
+	var outOfHealth = outOfHealth_player or outOfHealth_enemy
+	if (outOfHealth):
+		#if (outOfHealth_player): roundManager.OutOfHealth("player")
+		if (outOfHealth_enemy):	roundManager.OutOfHealth("dealer")
+		return
+
+	if (!dealerCanGoAgain):
+		EndTurnMain()
+	else:
+		if (shellSpawner.sequenceArray.size()):
+			# If the dealer shot himself with a sawed-off shotgun, reset the barrel by effectively calling EndTurnMain, but passing control back to the dealer instead of the player.
+			if roundManager.barrelSawedOff:
+				await get_tree().create_timer(.5, false).timeout
+				camera.BeginLerp("home")
+				if (dealerHoldingShotgun):
+					animator_shotgun.play("enemy put down shotgun")
+					shellLoader.DealerHandsDropShotgun()
+				dealerHoldingShotgun = false
+				await get_tree().create_timer(1, false).timeout
+				roundManager.EndTurn(false)
+			else:
+				BeginDealerTurn()
+		else:
+			EndTurnMain()
+	pass

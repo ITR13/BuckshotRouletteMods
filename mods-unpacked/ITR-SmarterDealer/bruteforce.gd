@@ -32,39 +32,36 @@ const ROUNDTYPE_DOUBLEORNOTHING = 2
 
 const itemScoreArray = [
 	[], [], [], # Skip none, shoot self, shoot other
-	# 0    1    2    3    4    5    6     7    8
-	[ 0.0, 1.5, 3.0, 4.0 , 4.5, 5.0 , 6.5 , 6.8, 7.0  ], # Magnify
-	[ 0.0, 0.5, 1.0, 1.2 , 1.2, 1.2 , 1.2 , 1.2, 1.2  ], # Cigarette
-	[ 0.0, 1.0, 2.0, 3.0 , 3.5, 4.0 , 4.25, 4.5, 4.75 ], # Beer
-	[ 0.0, 1.2, 2.0, 2.5 , 2.6, 2.7 , 2.8 , 2.9, 3.0  ], # Handcuff
-	[ 0.0, 1.5, 2.6, 3.1 , 3.5, 3.6 , 3.7 , 3.8, 3.9  ], # Handsaw
-	[ 0.0, 0.3, 0.6, 0.7 , 0.8, 0.9 , 0.95, 1.0, 1.05 ], # Expired Medicine
-	[ 0.0, 1.2, 2.4, 3.3 , 3.7, 4.1 , 4.5 , 4.9, 5.4  ], # Inverter
-	[ 0.0, 1.4, 2.8, 2.75, 2.7, 2.65, 2.6 , 2.5, 2.4  ], # Burner Phone
-	[ 0.0, 2.0, 4.0, 5.5 , 7.0, 8.0 , 9.0 , 9.5, 10   ], # Adrenaline
-	[ 0.0, 1.0, 2.0, 2.6 , 3.0, 3.0 , 3.0 , 3.0, 3.0, ], # FreeSlots
+	# 0    1    2    3     4     5     6     7    8
+	[ 0.0, 1.5, 3.0, 4.0 , 4.5 , 5.0 , 6.5 , 6.8, 7.0  ], # Magnify
+	[ 0.0, 0.5, 1.0, 1.2 , 1.2 , 1.2 , 1.2 , 1.2, 1.2  ], # Cigarette
+	[ 0.0, 1.0, 2.0, 3.0 , 3.5 , 4.0 , 4.25, 4.5, 4.75 ], # Beer
+	[ 0.0, 1.2, 2.0, 2.5 , 2.6 , 2.7 , 2.8 , 2.9, 3.0  ], # Handcuff
+	[ 0.0, 1.5, 2.6, 3.1 , 3.5 , 3.6 , 3.7 , 3.8, 3.9  ], # Handsaw
+	[ 0.0, 0.3, 0.6, 0.7 , 0.8 , 0.9 , 0.95, 1.0, 1.05 ], # Expired Medicine
+	[ 0.0, 1.2, 2.4, 3.3 , 3.7 , 4.1 , 4.5 , 4.9, 5.4  ], # Inverter
+	[ 0.0, 1.4, 2.8, 2.75, 2.7 , 2.65, 2.6 , 2.5, 2.4  ], # Burner Phone
+	[ 0.0, 2.0, 4.0, 5.5 , 7.0 , 8.0 , 9.0 , 9.5, 10.0 ], # Adrenaline
+	[ 0.0, 1.0, 2.0, 2.75, 3.25, 3.5 , 3.5 , 3.5, 3.5, ], # FreeSlots
 ]
 
 class Result:
 	var option: int
 	var deathChance: Array[float]
-	var deathChanceNextTurn: Array[float]
 	var healthScore: Array[float]
 	var itemScore: Array[float]
 
 	@warning_ignore("shadowed_variable")
-	func _init(option: int, deathChance, deathChanceNextTurn, healthScore, itemScore):
+	func _init(option: int, deathChance, healthScore, itemScore):
 		self.option = option
 		self.deathChance.assign(deathChance)
-		self.deathChanceNextTurn.assign(deathChanceNextTurn)
 		self.healthScore.assign(healthScore)
 		self.itemScore.assign(itemScore)
 
-	func mult(multiplier):
+	func mult(multiplier: float):
 		return Result.new(
 			self.option,
 			[multiplier*self.deathChance[0], multiplier*self.deathChance[1]],
-			[multiplier*self.deathChanceNextTurn[0], multiplier*self.deathChanceNextTurn[1]],
 			[multiplier*self.healthScore[0], multiplier*self.healthScore[1]],
 			[multiplier*self.itemScore[0], multiplier*self.itemScore[1]]
 		)
@@ -72,8 +69,6 @@ class Result:
 	func mutAdd(other: Result):
 		self.deathChance[0] += other.deathChance[0]
 		self.deathChance[1] += other.deathChance[1]
-		self.deathChanceNextTurn[0] += other.deathChanceNextTurn[0]
-		self.deathChanceNextTurn[1] += other.deathChanceNextTurn[1]
 		self.healthScore[0] += other.healthScore[0]
 		self.healthScore[1] += other.healthScore[1]
 		self.itemScore[0] += other.itemScore[0]
@@ -83,8 +78,8 @@ class Result:
 		return self.mult(1)
 
 	func _to_string():
-		return "Option %s %s %s %s %s" % [
-			self.option, self.deathChance, self.deathChanceNextTurn, self.healthScore, self.itemScore
+		return "Option %s %s %s %s" % [
+			self.option, self.deathChance, self.healthScore, self.itemScore
 		]
 
 # Player class
@@ -215,16 +210,14 @@ class BruteforcePlayer:
 		copy.adrenaline = other.adrenaline
 		return copy
 
-	func sum_items()->int:
+	func sum_items()->float:
 		var totalItems = self.count_items()
 		var freeSlots = 8 - totalItems
 
-		# Player 0 can consume cigarettes next turn, so saving them makes you less likely to draw more cigarettes
-		var cigaretteMultiplier = 1 if freeSlots < 4 else 2
-		var score: int = 0
+		var score: float = 0
 		score += itemScoreArray[OPTION_MAGNIFY][self.magnify]
 		score += itemScoreArray[OPTION_BEER][self.beer]
-		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes] * cigaretteMultiplier
+		score += itemScoreArray[OPTION_CIGARETTES][self.cigarettes]
 		score += itemScoreArray[OPTION_HANDSAW][self.handsaw]
 		score += itemScoreArray[OPTION_HANDCUFFS][self.handcuffs]
 		score += itemScoreArray[OPTION_MEDICINE][self.medicine]
@@ -356,6 +349,10 @@ class TempStates:
 	func Invert()->TempStates:
 		var other: TempStates = self.clone()
 		other.inverted = not other.inverted
+		if self.magnifyingGlassResult == MAGNIFYING_LIVE:
+			other.magnifyingGlassResult = MAGNIFYING_BLANK
+		elif self.magnifyingGlassResult == MAGNIFYING_BLANK:
+			other.magnifyingGlassResult = MAGNIFYING_LIVE
 		other.adrenaline = false
 		return other
 
@@ -380,12 +377,19 @@ class TempStates:
 		other.adrenaline = false
 		return other
 
+	func Medicine()->TempStates:
+		var other: TempStates = self.clone()
+		other.adrenaline = false
+		return other
+
 
 	func do_hash(num: int, liveCount_max: int)->int:
-		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 4
+		num = ((num * 3 + self.handcuffState) * 3 + self.magnifyingGlassResult) * 8
 		if self.usedHandsaw:
-			num += 2
+			num += 4
 		if self.inverted:
+			num += 2
+		if self.adrenaline:
 			num += 1
 		num *= (liveCount_max+1)
 		num += self.futureLive
@@ -408,7 +412,10 @@ class TempStates:
 			"Future Blank": self.futureBlank,
 		}
 
-static var printOptions = false
+# liveCount and blankCount both contain the count of bullets without considering the effect of active inverters.
+# tempStates.magnifyingGlassResult does consider the effect of active inverters.
+static var printOptions = true
+static var enableDebugTrace = false
 static var cachedGame: BruteforceGame = null
 static var cache = {}
 static func GetBestChoiceAndDamage(roundType: int, liveCount: int, blankCount: int, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates):
@@ -453,26 +460,20 @@ static func sum_array(array)->float:
 
 static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blankCount: int, liveCount_max: int, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates, isTopLayer:=false)->Result:
 	if player.health <= 0 or opponent.health <= 0:
-		var deadPlayerIs0 = (player.player_index if player.health == 0 else opponent.player_index) == 0
-
-		var itemScore: Array[float] = [0.0, 0.0]
-
-		itemScore[player.player_index] = player.sum_items()
-		itemScore[opponent.player_index] = opponent.sum_items()
+		var deadPlayerIs0 = (player.player_index if player.health <= 0 else opponent.player_index) == 0
 
 		var deathScore := [1.0, 0.0] if deadPlayerIs0 else [0.0, 1.0]
 
+		# Leftover health doesn't matter when a player dies. Set it to 0 here so CompareCurrent only compares health totals for the fraction of cases that don't end in a death.
 		var healthScore: Array[float] = [0.0, 0.0]
-		healthScore[player.player_index] = float(player.health)
-		healthScore[opponent.player_index] = float(opponent.health)
 
-		if not deadPlayerIs0:
-			if player.player_index == 0:
-				healthScore[0] += float(min(player.cigarettes, player.max_health - player.health))
-			else:
-				healthScore[0] += float(min(opponent.cigarettes, opponent.max_health - opponent.health))
+		var itemScore: Array[float] = [0.0, 0.0]
+		# The only time leftover items matter after a death is if the dealer dies in a double-or-nothing round.
+		if not deadPlayerIs0 and roundType == ROUNDTYPE_DOUBLEORNOTHING:
+			itemScore[player.player_index] = player.sum_items()
+			itemScore[opponent.player_index] = opponent.sum_items()
 
-		return Result.new(OPTION_NONE, deathScore, [0.0, 0.0], healthScore, itemScore)
+		return Result.new(OPTION_NONE, deathScore, healthScore, itemScore)
 
 	# On wirecut rounds you can no longer smoke, and your health is set to 1
 	if roundType == ROUNDTYPE_WIRECUT:
@@ -491,113 +492,29 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	if cache.has(ahash) and not isTopLayer:
 		return cache[ahash].clone()
 
-	# Double or nothing round has special logic
-	var donLogic = roundType == ROUNDTYPE_DOUBLEORNOTHING and player.player_index == 1
-
 	if liveCount == 0 and blankCount == 0:
-		var playerItemscore := player.sum_items()
-
-		var smokeAmount: int = min(player.cigarettes, player.max_health - player.health)
-		if player.player_index != 0:
-			smokeAmount = 0
-
-		var opponentSmokeAmount := 0
-		if opponent.player_index == 0:
-			opponentSmokeAmount = min(opponent.cigarettes, opponent.max_health - opponent.health)
-
-		var opponentItemscore := opponent.sum_items()
+		var deathChance: Array[float] = [0.0, 0.0]
 
 		var health: Array[float] = [0.0, 0.0]
-		health[player.player_index] = player.health + smokeAmount
-		health[opponent.player_index] = opponent.health + opponentSmokeAmount
+		health[player.player_index] = player.health
+		health[opponent.player_index] = opponent.health
 
-		var itemscore: Array[float] = [0.0, 0.0]
-		itemscore[player.player_index] = playerItemscore
-		itemscore[opponent.player_index] = opponentItemscore
+		var itemScore: Array[float] = [0.0, 0.0]
+		itemScore[player.player_index] = player.sum_items()
+		itemScore[opponent.player_index] = opponent.sum_items()
 
-		var dealerDeathChance: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-		var playerDeathChance: float = 0.0
-
+		# The player can always smoke at the beginning of the next round if they don't die this round.
+		# (The same isn't true for the dealer, who could be killed before he can take a turn.)
+		# Count the health and item scores for the player using their cigarettes at the beginning of the next round, but
+		# don't give them the extra FreeSlots value. (The cigarettes are still occupying a slot during item distribution.)
 		var startingPlayer = player if player.player_index == 0 else opponent
-		var otherPlayer = player if player.player_index == 1 else opponent
+		var smokeAmount: int = min(startingPlayer.cigarettes, startingPlayer.max_health - startingPlayer.health)
+		health[0] += smokeAmount
+		itemScore[0] -= itemScoreArray[OPTION_CIGARETTES][startingPlayer.cigarettes]
+		itemScore[0] += itemScoreArray[OPTION_CIGARETTES][startingPlayer.cigarettes - smokeAmount]
 
-		# two shells
-		var damageToDeal: int = 2 if startingPlayer.handsaw > 0 else 1
-
-		if health[1] <= damageToDeal:
-			if startingPlayer.handcuffs > 0 or startingPlayer.magnify > 0:
-				dealerDeathChance[0] += 1.0
-			elif startingPlayer.beer > 0 or health[0] >= 2:
-				dealerDeathChance[0] += 0.5
-
-		if startingPlayer.handcuffs == 0 and startingPlayer.magnify == 0 and startingPlayer.beer == 0 and health[0] <= 1:
-			playerDeathChance += 0.5
-
-		# 3 shells
-		if startingPlayer.magnify >= 2:
-			dealerDeathChance[1] += 1
-		elif startingPlayer.magnify >= 1:
-			if startingPlayer.handcuffs > 0:
-				dealerDeathChance[1] += 1.0 if health[1] <= 1 else 2.0 / 3
-			elif startingPlayer.beer > 0:
-				dealerDeathChance[1] += 2.0 / 3.0
-		elif startingPlayer.handcuffs > 0:
-			if startingPlayer.beer > 0:
-				dealerDeathChance[1] += 2.0 / 3.0 if health[1] <= 1 else 1.0 / 3.0
-			elif health[0] >= 2:
-				dealerDeathChance[1] += 2.0 / 3.0 if health[1] <= 1 else 1.0 / 3.0
-			else:
-				playerDeathChance = 1.0 / 3.0
-		elif startingPlayer.beer >= 2:
-			dealerDeathChance[1] += 1.0 / 3.0
-		elif health[0] >= 2:
-			dealerDeathChance[1] += 1.0 / 3.0
-		else:
-			dealerDeathChance[1] += 1.0 / 3.0
-			playerDeathChance += 1.0 / 3.0
-
-		if health[1] > damageToDeal:
-			dealerDeathChance[1] *= 0
-
-		# 4+ shells
-		var handcuffDamageToDeal = damageToDeal
-		if startingPlayer.handcuffs > 0:
-			handcuffDamageToDeal += 2 if startingPlayer.handsaw >= 2 else 1
-
-		var dealerDamage = 2 if otherPlayer.handsaw > 0 else 1
-		if otherPlayer.handcuffs > 0:
-			dealerDamage += 2 if otherPlayer.handsaw >= 2 else 1
-
-		for i in range(4, 9):
-			@warning_ignore("integer_division")
-			var tempLiveShells = i / 2
-			var tempBlankShells = i - tempLiveShells
-			if health[1] <= damageToDeal:
-				if startingPlayer.magnify >= tempBlankShells:
-					dealerDeathChance[i-2] += 1
-				if startingPlayer.handcuffs > 0 and health[1] <= 1:
-					if startingPlayer.magnify >= tempBlankShells - 1:
-						dealerDeathChance[i-2] += 1
-			elif health[1] <= handcuffDamageToDeal:
-				if startingPlayer.magnify >= tempBlankShells + 1:
-					dealerDeathChance[i-2] += 1
-
-			if dealerDeathChance[i-2] != 1 and health[0] <= dealerDamage:
-				var lastIsLiveChance = tempLiveShells / float(i)
-				var secondIsLiveChance = (tempLiveShells-1) / float(i - 1)
-				playerDeathChance += lastIsLiveChance * secondIsLiveChance
-
-		# Special scenario where dealer dies no matter what
-		var shellChance = 1.0/7.0
-		var deathChance = [playerDeathChance * shellChance, sum_array(dealerDeathChance) * shellChance]
-		if health[1] <= damageToDeal:
-			if (startingPlayer.magnify > 0 and startingPlayer.inverter > 0) or (startingPlayer.magnify > 0 and startingPlayer.adrenaline > 0 and otherPlayer.inverter > 0) or (startingPlayer.inverter > 0 and startingPlayer.adrenaline > 0 and otherPlayer.magnify > 0) or (startingPlayer.adrenaline >= 2 and otherPlayer.magnify > 0 and otherPlayer.inverter > 0):
-				deathChance = [0.0, 1.0]
-
-		var result = Result.new(OPTION_NONE, [0.0, 0.0], deathChance, health, itemscore)
-
+		var result = Result.new(OPTION_NONE, deathChance, health, itemScore)
 		cache[ahash] = result
-
 		return result.clone()
 
 
@@ -618,11 +535,12 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	var originalRemove := 1
 	var invertedRemove := 0
 	if tempStates.inverted:
-		var temp = liveChance
-		liveChance = blankChance
-		blankChance = temp
 		originalRemove = 0
 		invertedRemove = 1
+		if tempStates.magnifyingGlassResult == MAGNIFYING_NONE:
+			var temp = liveChance
+			liveChance = blankChance
+			blankChance = temp
 
 	# Some hard-coded kills to speed up:
 	if player.player_index == 1:
@@ -691,15 +609,11 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 				cache[ahash] = result
 				return result.clone()
 
-	var options: Dictionary = {
-		OPTION_SHOOT_OTHER: Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]),
-	}
-	if not tempStates.usedHandsaw:
-		options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+	var options: Dictionary = {}
 
 	var itemFrom = opponent if tempStates.adrenaline else player
 
-	if tempStates.handcuffState <= HANDCUFF_NONE and itemFrom.handcuffs > 0 and (donLogic or (liveCount+blankCount) > 1):
+	if tempStates.handcuffState <= HANDCUFF_NONE and itemFrom.handcuffs > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -709,9 +623,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Cuff())
 		options[OPTION_HANDCUFFS] = result
 
-	if itemFrom.cigarettes > 0 and (player.health < player.max_health or donLogic):
-		# On double or nothing rounds you might want to waste cigarettes to have them carry over to the next round
-		# Technically you might want this even on regular rounds, but it makes the logic messy. Same reason for don-checks above
+	if itemFrom.cigarettes > 0:
 		var healedPlayer := player.use("cigarettes", 0 if tempStates.adrenaline else 1)
 		var healedOpponent := opponent.use("cigarettes", 1 if tempStates.adrenaline else 0)
 		if healedPlayer.health < healedPlayer.max_health:
@@ -720,18 +632,31 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_CIGARETTES] = result
 
 	if itemFrom.beer > 0:
-		options[OPTION_BEER] = Result.new(OPTION_BEER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		var beerPlayer = player
+		var beerOpponent = opponent
+		if tempStates.adrenaline:
+			beerOpponent = beerOpponent.use("beer")
+		else:
+			beerPlayer = beerPlayer.use("beer")
 
-	# Dealer isn't allowed to eat medicine on 1 health left... for some reason
-	if player.medicine > 0 and not tempStates.adrenaline and (player.player_index == 0 or player.health > 1):
-		var goodMedicine := player.use("medicine")
-		goodMedicine.health += 2
+		options[OPTION_BEER] = Result.new(OPTION_BEER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		if liveChance > 0:
+			var liveBeerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
+			options[OPTION_BEER].mutAdd(liveBeerResult.mult(liveChance))
+		if blankChance > 0:
+			var blankBeerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
+			options[OPTION_BEER].mutAdd(blankBeerResult.mult(blankChance))
+
+	if itemFrom.medicine > 0:
+		var medicinePlayer := player.use("medicine", 0 if tempStates.adrenaline else 1)
+		var medicineOpponent := opponent.use("medicine", 1 if tempStates.adrenaline else 0)
+
+		var goodMedicine := medicinePlayer.use("health", -2)
 		if goodMedicine.health > goodMedicine.max_health:
 			goodMedicine.health = goodMedicine.max_health
-		var badMedicine := player.use("medicine")
-		badMedicine.health -= 1
-		var goodResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, opponent, tempStates)
-		var badResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, opponent, tempStates)
+		var badMedicine := medicinePlayer.use("health", 1)
+		var goodResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, goodMedicine, medicineOpponent, tempStates.Medicine())
+		var badResult := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, badMedicine, medicineOpponent, tempStates.Medicine())
 		goodResult.mutAdd(badResult)
 		options[OPTION_MEDICINE] = goodResult.mult(0.5)
 
@@ -746,7 +671,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		options[OPTION_INVERTER] = result
 
 
-	if not tempStates.usedHandsaw and itemFrom.handsaw > 0 and (donLogic or liveChance > 0):
+	if not tempStates.usedHandsaw and itemFrom.handsaw > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -756,37 +681,28 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 		options[OPTION_HANDSAW] = result
 
-	if not tempStates.adrenaline and player.adrenaline > 0 and ((opponent.magnify+opponent.burner > 0 and liveChance > 0 and blankChance > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE) or opponent.beer > 0 or (opponent.handcuffs > 0 and (liveCount + blankCount > 1) and tempStates.handcuffState == HANDCUFF_NONE) or (opponent.handsaw > 0 and not tempStates.usedHandsaw and liveChance > 0) or opponent.inverter > 0 or (opponent.cigarettes > 0 and player.health <= 2 and player.max_health > player.health)):
+	if not tempStates.adrenaline and player.adrenaline > 0:
 		var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 		options[OPTION_ADRENALINE] = result
-		if result.option == OPTION_NONE:
-			print("Bad adrenaline pathing: ", liveCount, " ", blankCount, "\n", player, "\n", opponent, "\n", tempStates, "\n")
 
-
-	if tempStates.magnifyingGlassResult == MAGNIFYING_NONE and itemFrom.magnify > 0 and (liveChance > 0 and blankChance > 0):
+	if itemFrom.magnify > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
 			b = b.use("magnify")
 		else:
 			a = a.use("magnify")
-		var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
-		var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
-		options[OPTION_MAGNIFY] = blankResult.mult(blankChance)
-		options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveChance))
-	elif donLogic and itemFrom.magnify > 0:
-		var a = player
-		var b = opponent
-		if tempStates.adrenaline:
-			b = b.use("magnify")
-		else:
-			a = a.use("magnify")
-		# Allow wasting magnifying glasses, though you literally never want to do this
-		var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
-		options[OPTION_MAGNIFY] = result
+
+		options[OPTION_MAGNIFY] = Result.new(OPTION_MAGNIFY, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		if liveChance > 0:
+			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_LIVE))
+			options[OPTION_MAGNIFY].mutAdd(liveResult.mult(liveChance))
+		if blankChance > 0:
+			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Magnify(MAGNIFYING_BLANK))
+			options[OPTION_MAGNIFY].mutAdd(blankResult.mult(blankChance))
 
 
-	if itemFrom.burner > 0 and tempStates.magnifyingGlassResult == MAGNIFYING_NONE and liveChance > 0 and blankChance > 0:
+	if itemFrom.burner > 0:
 		var a = player
 		var b = opponent
 		if tempStates.adrenaline:
@@ -795,96 +711,85 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			a = a.use("burner")
 
 		# There are 4 possible scenarios:
-		# Hit an unseen live (live - futureLive) / total
-		# Hit an unseen blank (blank - futureBlank) / total
-		# Hit an already seen live (futureLive / total)
-		# Hit an already seen blank (futureBlank / total)
+		# Hit an unseen live (expectedFutureLive - knownFutureLive) / futureShells
+		# Hit an unseen blank (expectedFutureBlank - knownFutureBlank) / futureShells
+		# Hit an already seen live (knownFutureLive / futureShells)
+		# Hit an already seen blank (knownFutureBlank / futureShells)
 
-		var bTotal := float(blankCount+liveCount)
-		var bMissChance := (tempStates.futureBlank+tempStates.futureLive) / bTotal
-		var bLiveChance := (liveCount - tempStates.futureLive) / bTotal
-		var bBlankChance := (blankCount - tempStates.futureBlank) / bTotal
+		var futureShellCount := float(blankCount+liveCount-1)
+		var uninvertedFirstLiveChance := liveChance if not tempStates.inverted else blankChance
 
-		options[OPTION_BURNER] = Result.new(OPTION_BURNER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		var bMissChance
+		var bLiveChance
+		var bBlankChance
+		if futureShellCount == 0:
+			# Using a burner with no future shells is guaranteed to not give information.
+			bMissChance = 1.0
+			bLiveChance = 0.0
+			bBlankChance = 0.0
+		else:
+			bMissChance = (tempStates.futureBlank+tempStates.futureLive) / futureShellCount
+			bLiveChance = (liveCount - uninvertedFirstLiveChance - tempStates.futureLive) / futureShellCount
+			bBlankChance = (blankCount - (1-uninvertedFirstLiveChance) - tempStates.futureBlank) / futureShellCount
+
+		options[OPTION_BURNER] = Result.new(OPTION_BURNER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
 		if bMissChance > 0:
-			var missResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates)
+			var missResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 0))
 			options[OPTION_BURNER].mutAdd(missResult.mult(bMissChance))
 		if bLiveChance > 0:
-			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 1))
+			var liveResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
 			options[OPTION_BURNER].mutAdd(liveResult.mult(bLiveChance))
 		if bBlankChance > 0:
-			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(1, 0))
+			var blankResult = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Future(0, 1))
 			options[OPTION_BURNER].mutAdd(blankResult.mult(bBlankChance))
 
-	var damageToDeal := int(min(2 if tempStates.usedHandsaw else 1, opponent.health))
+	var damageToDeal := 2 if tempStates.usedHandsaw else 1
 
-	var beerPlayer = player
-	var beerOpponent = opponent
-	if tempStates.adrenaline:
-		beerOpponent = beerOpponent.use("beer")
-	else:
-		beerPlayer = beerPlayer.use("beer")
+	options[OPTION_SHOOT_OTHER] = Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+	options[OPTION_SHOOT_SELF] = Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 
 	if liveChance > 0:
-		var resultIfShootLife := Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
-		var resultIfSelfShootLive := Result.new(-1,[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0],[-9.0, -9.0])
+		var resultIfShootLive := Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+		var resultIfSelfShootLive := Result.new(OPTION_SHOOT_SELF, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
-			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", damageToDeal), player, TempStates.new())
-			if not tempStates.usedHandsaw:
-				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent, player.use("health", damageToDeal), TempStates.new())
-			resultIfShootLife = resultIfShootLife.clone()
-			resultIfSelfShootLive = resultIfSelfShootLive.clone()
+			resultIfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", damageToDeal), player, TempStates.new())
+			resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent, player.use("health", damageToDeal), TempStates.new())
 		else:
 			var newTempState := TempStates.new()
 			newTempState.handcuffState = HANDCUFF_FREENEXT
-			resultIfShootLife = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player, opponent.use("health", damageToDeal), newTempState)
-			if not tempStates.usedHandsaw:
-				resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player.use("health", damageToDeal), opponent, newTempState)
+			resultIfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player, opponent.use("health", damageToDeal), newTempState.clone())
+			resultIfSelfShootLive = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, player.use("health", damageToDeal), opponent, newTempState)
 
-		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootLife.mult(liveChance))
-
-		if not tempStates.usedHandsaw:
-			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootLive.mult(liveChance))
-
-		if itemFrom.beer > 0:
-			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
-			options[OPTION_BEER].mutAdd(beerResult.mult(liveChance))
+		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootLive.mult(liveChance))
+		options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootLive.mult(liveChance))
 
 	if blankChance > 0:
-		if not tempStates.usedHandsaw:
-			var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, tempStates.SkipBullet())
-			options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))
+		var selfShootState := tempStates.SkipBullet()
+		selfShootState.usedHandsaw = false
+		var resultIfSelfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, selfShootState)
 
+		var resultIfShootBlank := Result.new(OPTION_SHOOT_OTHER, [0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
 		if tempStates.handcuffState <= HANDCUFF_FREENEXT:
-			var resultIfShootBlank := GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, opponent, player, TempStates.new())
-			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
+			resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, opponent, player, TempStates.new())
 		else:
 			var newTempState := TempStates.new()
 			newTempState.handcuffState = HANDCUFF_FREENEXT
-			var resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, newTempState)
-			options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
+			resultIfShootBlank = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, player, opponent, newTempState)
 
-		if itemFrom.beer > 0:
-			var beerResult = GetBestChoiceAndDamage_Internal(roundType, liveCount - invertedRemove, blankCount - originalRemove, liveCount_max, beerPlayer, beerOpponent, tempStates.SkipBullet())
-			options[OPTION_BEER].mutAdd(beerResult.mult(blankChance))
+		options[OPTION_SHOOT_OTHER].mutAdd(resultIfShootBlank.mult(blankChance))
+		options[OPTION_SHOOT_SELF].mutAdd(resultIfSelfShootBlank.mult(blankChance))
 
-	if printOptions and isTopLayer:
+
+	if (printOptions and isTopLayer) or enableDebugTrace:
 		print(options, " (", ahash, ")")
-		# print(player, " ", opponent, " ", tempStates)
+	if enableDebugTrace:
+		print("%s Live, %s Blank\n%s\n%s\n%s" % [liveCount, blankCount, player, opponent, tempStates])
 
 	var current: Result = null
 	var results: Array[Result] = []
 
 	for key in options:
-		if (tempStates.usedHandsaw or tempStates.adrenaline) and key == OPTION_SHOOT_SELF:
-			# Disallow this for now
-			continue
-
-		if tempStates.adrenaline and key == OPTION_SHOOT_OTHER:
-			# Easier than not traveling down the path
-			continue
-
 		var option = options[key].clone()
 		option.option = key
 
@@ -893,7 +798,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 			results = [current]
 			continue
 
-		var comparison = CompareCurrent(player.player_index == 0, false, current, option)
+		var comparison = CompareCurrent(player.player_index == 0, current, option)
 		if comparison == 0:
 			results.append(option)
 			continue
@@ -904,121 +809,55 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 		current = option
 		results = [current]
 
-	if results.size() <= 0:
-		print("Oops! Bad pathing! Probably adrenaline's fault again!:\n", options)
-		results = [Result.new(
-			OPTION_NONE,
-			[-100, 100],
-			[-100, 100],
-			[100, -100],
-			[100, -100]
-		)]
-
-	if results.size() <= 1:
-		cache[ahash] = results[0]
-		return results[0].clone()
-
-	# Medicine is usually not worth, even if the expected value is 0.
-	# This should technically be fixed through deathChanceNextTurn, but that's a headache.
-	for i in range(results.size()):
-		if results[i].option != OPTION_MEDICINE:
-			continue
-		results.remove_at(i)
-		break
-
-	results.shuffle()
+	if results.size() > 1:
+		results.shuffle()
 
 	cache[ahash] = results[0]
-
 	return results[0].clone()
 
-
-static func RandomizeDealer():
-	dealerKillCutoff = randf()
-	dealerDeathCutoff = randf()
-
-	ModLoaderLog.info(
-		"Randomized dealer!\nkillCutoff %s\ndeathCutoff %s" % [
-			dealerKillCutoff, dealerDeathCutoff
-		],
-		"ITR-SmarterDealer"
-	)
-
-static var dealerKillCutoff: float = 0.8
-static var dealerDeathCutoff: float = 0.8
-
 # -1 means current is better than other
-static func CompareCurrent(isPlayer0: bool, donLogic: bool, current: Result, other: Result):
+static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 	if isPlayer0:
+		# The player's first priority is staying alive, followed by killing the dealer.
+		# This is because the player has a strong advantage in new rounds because they go first.
+
 		# Lower is better
-		var comparison = Compare(
-			current.deathChance[0]+current.deathChanceNextTurn[0], 
-			other.deathChance[0]+other.deathChanceNextTurn[0]
-		)
-		if comparison != 0:
-			return comparison
-		comparison = Compare(
+		var surviveComparison = Compare(
 			current.deathChance[0],
 			other.deathChance[0]
 		)
-		if comparison != 0:
-			return comparison
+		if surviveComparison != 0:
+			return surviveComparison
 
 		# Higher is better
 		var killComparison = Compare(
-			other.deathChance[1] + other.deathChanceNextTurn[1], 
-			current.deathChance[1] + current.deathChanceNextTurn[1]
-		)
-		var killComparison2 = Compare(
-			other.deathChance[1], 
+			other.deathChance[1],
 			current.deathChance[1]
 		)
-		if killComparison != 0 and killComparison == killComparison2:
+		if killComparison != 0:
 			return killComparison
 	else:
-		if current.deathChance[1] > dealerDeathCutoff:
-			# Lower is better
-			var comparison = Compare(current.deathChance[1], other.deathChance[1])
-			if comparison != 0:
-				return comparison
-		elif Compare(other.deathChance[1], dealerDeathCutoff) > 0:
-			return -1
-
-	var myIndex = 0 if isPlayer0 else 1
-	var otherIndex = 1 if isPlayer0 else 0
-
-	if donLogic and not isPlayer0:
-		if not isPlayer0:
-			if current.deathChance[0] >= dealerKillCutoff:
-				if other.deathChance[0] < dealerKillCutoff:
-					return -1
-			elif other.deathChance[0] >= dealerKillCutoff:
-				return 1
-		else:
-			# Higher is better
-			var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
-			if killComparison != 0:
-				return killComparison
+		# The dealer's first priority is killing the player, followed by staying alive.
+		# This is because the player has a strong advantage in new rounds because they go first, and the dealer only has to kill the player once.
 
 		# Higher is better
-		var itemComparison = Compare(other.itemScore[otherIndex], current.itemScore[otherIndex])
-		if itemComparison != 0:
-			return itemComparison
-
-	else:
-		# Higher is better
-		var killComparison = Compare(other.deathChance[otherIndex], current.deathChance[otherIndex])
+		var killComparison = Compare(
+			other.deathChance[0],
+			current.deathChance[0]
+		)
 		if killComparison != 0:
 			return killComparison
 
-		if Compare(other.deathChance[otherIndex], 1.0) >= 0:
-			var itemDiff = current.itemScore[myIndex] - current.itemScore[otherIndex]
-			var otherItemDiff = other.itemScore[myIndex] - other.itemScore[otherIndex]
+		# Lower is better
+		var surviveComparison = Compare(
+			current.deathChance[1],
+			other.deathChance[1]
+		)
+		if surviveComparison != 0:
+			return surviveComparison
 
-			# Higher is better
-			var comparison = Compare(otherItemDiff, itemDiff)
-			if comparison != 0:
-				return comparison
+	var myIndex = 0 if isPlayer0 else 1
+	var otherIndex = 1 if isPlayer0 else 0
 
 	var healthDiff = current.healthScore[myIndex] - current.healthScore[otherIndex]
 	var otherHealthDiff = other.healthScore[myIndex] - other.healthScore[otherIndex]

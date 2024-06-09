@@ -1,14 +1,16 @@
 {
 	"name": "SmarterDealer",
 	"namespace": "ITR",
-	"version_number": "2.0.0",
+	"version_number": "2.0.1",
 	"description": "Improves the Dealer AI",
 	"dependencies": [],
 	"website_url": "",
 	"extra": {
 		"godot": {
 			"authors": [
-				"ITR"
+				"ITR",
+				"Ballardrog",
+				"MSLaFaver"
 			],
 			"tags": [],
 			"description_rich": "",

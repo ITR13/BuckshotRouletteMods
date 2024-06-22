@@ -50,20 +50,23 @@ class Result:
 	var deathChance: Array[float]
 	var healthScore: Array[float]
 	var itemScore: Array[float]
+	var depth: float # Expected number of actions taken before the round ends.
 
 	@warning_ignore("shadowed_variable")
-	func _init(option: int, deathChance, healthScore, itemScore):
+	func _init(option: int, deathChance, healthScore, itemScore, depth: float = 0.0):
 		self.option = option
 		self.deathChance.assign(deathChance)
 		self.healthScore.assign(healthScore)
 		self.itemScore.assign(itemScore)
+		self.depth = depth
 
 	func mult(multiplier: float):
 		return Result.new(
 			self.option,
 			[multiplier*self.deathChance[0], multiplier*self.deathChance[1]],
 			[multiplier*self.healthScore[0], multiplier*self.healthScore[1]],
-			[multiplier*self.itemScore[0], multiplier*self.itemScore[1]]
+			[multiplier*self.itemScore[0], multiplier*self.itemScore[1]],
+			multiplier*self.depth
 		)
 
 	func mutAdd(other: Result):
@@ -73,13 +76,14 @@ class Result:
 		self.healthScore[1] += other.healthScore[1]
 		self.itemScore[0] += other.itemScore[0]
 		self.itemScore[1] += other.itemScore[1]
+		self.depth += other.depth
 
 	func clone()->Result:
 		return self.mult(1)
 
 	func _to_string():
-		return "Option %s %s %s %s" % [
-			self.option, self.deathChance, self.healthScore, self.itemScore
+		return "Option %s %s %s %s %s" % [
+			self.option, self.deathChance, self.healthScore, self.itemScore, self.depth
 		]
 
 # Player class
@@ -554,6 +558,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 					if player.handsaw == 0 and opponent.handsaw > 0 and player.adrenaline > 0 and not tempStates.adrenaline:
 						var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 						result.option = OPTION_ADRENALINE
+						result.depth += 1
 						cache[ahash] = result
 						return result.clone()
 					var a = player
@@ -564,12 +569,14 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 						a = a.use("handsaw")
 					var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Saw())
 					result.option = OPTION_HANDSAW
+					result.depth += 1
 					cache[ahash] = result
 					return result.clone()
 
 				var result = GetBestChoiceAndDamage_Internal(roundType, liveCount - originalRemove, blankCount - invertedRemove, liveCount_max, opponent.use("health", opponent.health), player, TempStates.new())
 				result = result.clone()
 				result.option = OPTION_SHOOT_OTHER
+				result.depth += 1
 				cache[ahash] = result
 				return result.clone()
 			elif blankChance >= 1:
@@ -582,11 +589,13 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 						a = a.use("inverter")
 					var result = GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, a, b, tempStates.Invert())
 					result.option = OPTION_INVERTER
+					result.depth += 1
 					cache[ahash] = result
 					return result.clone()
 				elif opponent.inverter > 0 and player.adrenaline > toSteal:
 					var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 					result.option = OPTION_ADRENALINE
+					result.depth += 1
 					cache[ahash] = result
 					return result.clone()
 			elif (player.magnify > 0 or (tempStates.adrenaline and opponent.magnify > 0)) and (player.inverter > 0 or (opponent.inverter > 0 and player.adrenaline > toSteal)):
@@ -601,11 +610,13 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 				var result = blankResult.mult(blankChance)
 				result.mutAdd(liveResult.mult(liveChance))
 				result.option = OPTION_MAGNIFY
+				result.depth += 1
 				cache[ahash] = result
 				return result.clone()
 			elif (opponent.magnify > 0 and player.inverter > 0 and player.adrenaline > toSteal) or (opponent.magnify > 0 and opponent.inverter > 0 and player.adrenaline >= toSteal+2):
 				var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCount_max, player.use("adrenaline"), opponent, tempStates.Adrenaline())
 				result.option = OPTION_ADRENALINE
+				result.depth += 1
 				cache[ahash] = result
 				return result.clone()
 
@@ -812,6 +823,7 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	if results.size() > 1:
 		results.shuffle()
 
+	results[0].depth += 1
 	cache[ahash] = results[0]
 	return results[0].clone()
 
@@ -863,12 +875,18 @@ static func CompareCurrent(isPlayer0: bool, current: Result, other: Result):
 	var otherHealthDiff = other.healthScore[myIndex] - other.healthScore[otherIndex]
 
 	# Higher is better
-	var comparison := Compare(otherHealthDiff, healthDiff)
-	if comparison != 0:
-		return comparison
+	var healthComparison := Compare(otherHealthDiff, healthDiff)
+	if healthComparison != 0:
+		return healthComparison
 
 	var itemDiff = current.itemScore[myIndex] - current.itemScore[otherIndex]
 	var otherItemDiff = other.itemScore[myIndex] - other.itemScore[otherIndex]
 
 	# Higher is better
-	return Compare(otherItemDiff, itemDiff)
+	var itemComparison := Compare(otherItemDiff, itemDiff)
+	if itemComparison != 0:
+		return itemComparison
+
+	# All else being equal, don't waste time.
+	# Lower is better
+	return Compare(current.depth, other.depth)

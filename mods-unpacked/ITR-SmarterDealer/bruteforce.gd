@@ -198,7 +198,7 @@ class BruteforcePlayer:
 			return null
 		if other.max_health != self.max_health:
 			return null
-		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine or other.inverter > self.max_inverter or other.burner > self.max_burner:
+		if other.magnify > self.max_magnify or other.cigarettes > self.max_cigarettes or other.beer > self.max_beer or other.handcuffs > self.max_handcuffs or other.handsaw > self.max_handsaw or other.medicine > self.max_medicine or other.inverter > self.max_inverter or other.burner > self.max_burner or other.max_adrenaline > self.max_adrenaline:
 			return null
 
 		var copy = BruteforcePlayer.new(self.player_index, self.max_health, self.max_magnify, self.max_cigarettes, self.max_beer, self.max_handcuffs, self.max_handsaw, self.max_medicine, self.max_inverter, self.max_burner, self.max_adrenaline)
@@ -422,6 +422,8 @@ static var printOptions = true
 static var enableDebugTrace = false
 static var cachedGame: BruteforceGame = null
 static var cache = {}
+static var cacheHits = 0
+static var cacheMisses = 0
 static func GetBestChoiceAndDamage(roundType: int, liveCount: int, blankCount: int, player: BruteforcePlayer, opponent: BruteforcePlayer, tempStates: TempStates):
 	var liveCountMax := liveCount
 	if cachedGame != null:
@@ -447,7 +449,10 @@ static func GetBestChoiceAndDamage(roundType: int, liveCount: int, blankCount: i
 
 	ModLoaderLog.info("[%s] %s Live, %s Blank\n%s\n%s\n%s" % [roundString, liveCount, blankCount, player, opponent, tempStates], "ITR-SmarterDealer")
 
+	cacheHits = 0
+	cacheMisses = 0
 	var result := GetBestChoiceAndDamage_Internal(roundType, liveCount, blankCount, liveCountMax, player, opponent, tempStates, true)
+	ModLoaderLog.info("Cache Hits: %s\nCache Misses: %s\nCache Size: %s" % [cacheHits, cacheMisses, cache.size()], "ITR-SmarterDealer")
 	return result
 
 const EPSILON = 0.00000000000001
@@ -494,7 +499,10 @@ static func GetBestChoiceAndDamage_Internal(roundType: int, liveCount: int, blan
 	ahash = tempStates.do_hash(ahash, liveCount_max)
 
 	if cache.has(ahash) and not isTopLayer:
+		cacheHits += 1
 		return cache[ahash].clone()
+	else:
+		cacheMisses += 1
 
 	if liveCount == 0 and blankCount == 0:
 		var deathChance: Array[float] = [0.0, 0.0]

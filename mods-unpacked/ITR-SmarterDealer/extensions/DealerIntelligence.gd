@@ -69,6 +69,11 @@ func createPlayer(player_index, itemArray):
 		magnifyingGlasses, cigarettes, beer, handcuffs, handsaw, medicine, inverters, burners, adrenaline
 	)
 
+func playerStateSpaceSizeEstimation(player: Bruteforce.BruteforcePlayer) -> int:
+	var result = player.health + 1
+	for item in [player.magnify, player.cigarettes, player.beer, player.handcuffs, player.handsaw, player.medicine, player.inverter, player.burner, player.adrenaline]:
+		result *= item + 1
+	return result
 
 var inverted_shell = false
 var adrenaline = false
@@ -105,21 +110,26 @@ func AlternativeChoice(isPlayer: bool = false, overrideShell = ""):
 	var dealer = createPlayer(1, itemManager.itemArray_dealer)
 	dealer.health = roundManager.health_opponent
 
-	var itemsInPlay = player.count_items() + dealer.count_items()
-	var totalShells = shellSpawner.sequenceArray.size()
+	# It's not perfect, but it's typically within a factor of 2 when the number of state spaces is high enough to matter.
+	var estimatedStateSpace: int = playerStateSpaceSizeEstimation(player) * playerStateSpaceSizeEstimation(dealer) * (liveCount+1) * (blankCount+1)
+	ModLoaderLog.info("Estimated state space size: %s" % estimatedStateSpace, "ITR-SmarterDealer")
 
 	# Some probably dumb plays to prevent the AI from spending ages thinking
-	if itemsInPlay + totalShells >= 16:
+	# This threshold caps dealer thinking time to ~20 seconds on my machine.
+	if estimatedStateSpace > 75000:
 		var check = player if isPlayer else dealer
-
-		if check.burner > 0:
-			return Bruteforce.OPTION_BURNER
 
 		if check.cigarettes > 0 and check.health < check.max_health:
 			return Bruteforce.OPTION_CIGARETTES
 
+		if check.burner > 0:
+			return Bruteforce.OPTION_BURNER
+
 		if check.beer > 0:
 			return Bruteforce.OPTION_BEER
+
+		# Favor speed over optimal play if things are really complicated.
+		return Bruteforce.OPTION_SHOOT_OTHER
 
 
 	var shell = Bruteforce.MAGNIFYING_NONE

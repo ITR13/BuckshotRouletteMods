@@ -1,35 +1,22 @@
 extends Node
 
-
 const AUTHORNAME_MODNAME_DIR := "ITR-SmarterDealer"
-const AUTHORNAME_MODNAME_LOG_NAME := "ITR-SmarterDealer:Main"
+#const AUTHORNAME_MODNAME_LOG_NAME := "ITR-SmarterDealer:Main"
 
-var mod_dir_path := ""
-var extensions_dir_path := ""
-var translations_dir_path := ""
+const hooks = [
+	"scripts/DealerIntelligence.gd",
+	"scripts/ItemInteraction.gd",
+	"scripts/ItemManager.gd"
+]
 
-var ran_main = false
+const config_defaults = {
+	"comments": true
+}
 
-# Before v6.1.0
-# func _init(modLoader = ModLoader) -> void:
 func _init() -> void:
-	mod_dir_path = ModLoaderMod.get_unpacked_dir()+(AUTHORNAME_MODNAME_DIR)+"/"
-	# Add extensions
-	install_script_extensions()
+	for hook in hooks:
+		ModLoaderMod.install_script_hooks("res://%s" % hook,
+			"res://mods-unpacked/%s/%s" % [AUTHORNAME_MODNAME_DIR, hook])
 
-func install_script_extensions() -> void:
-	extensions_dir_path = mod_dir_path+"extensions/"
-	const extensions = [
-		'ItemManager',
-		'ItemInteraction',
-		'DealerIntelligence',
-	]
-	for extension in extensions:
-		ModLoaderMod.install_script_extension(extensions_dir_path+extension+".gd")
-
-	
-func _ready() -> void:
-	pass
-
-func _process(delta):
-	pass
+func _ready():
+	ModLoader.get_node("MSLaFaver-ModMenu").config_init(AUTHORNAME_MODNAME_DIR, config_defaults)

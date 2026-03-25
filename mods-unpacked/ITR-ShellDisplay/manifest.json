@@ -4,7 +4,7 @@
 	"version_number": "2.0.0",
 	"description": "Shows the remaining amount of shells in the top right corner.",
 	"dependencies": ["MSLaFaver-ModMenu"],
-	"website_url": "",
+	"website_url": "https://github.com/ITR13/BuckshotRouletteMods",
 	"extra": {
 		"godot": {
 			"authors": ["ITR"],

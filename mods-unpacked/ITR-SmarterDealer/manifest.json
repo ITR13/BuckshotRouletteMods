@@ -1,7 +1,7 @@
 {
 	"name": "SmarterDealer",
 	"namespace": "ITR",
-	"version_number": "2.0.1",
+	"version_number": "3.0.0",
 	"description": "SMARTERDEALER_DESC",
 	"dependencies": ["MSLaFaver-ModMenu"],
 	"website_url": "",

@@ -4,7 +4,7 @@
 	"version_number": "3.0.0",
 	"description": "SMARTERDEALER_DESC",
 	"dependencies": ["MSLaFaver-ModMenu"],
-	"website_url": "",
+	"website_url": "https://github.com/ITR13/BuckshotRouletteMods",
 	"extra": {
 		"godot": {
 			"authors": [

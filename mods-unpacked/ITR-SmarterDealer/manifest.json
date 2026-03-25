@@ -2,8 +2,8 @@
 	"name": "SmarterDealer",
 	"namespace": "ITR",
 	"version_number": "2.0.1",
-	"description": "Improves the Dealer AI",
-	"dependencies": [],
+	"description": "SMARTERDEALER_DESC",
+	"dependencies": ["MSLaFaver-ModMenu"],
 	"website_url": "",
 	"extra": {
 		"godot": {
@@ -18,14 +18,21 @@
 			"load_before": [],
 			"incompatibilities": [],
 			"compatible_mod_loader_version": [
-				"6.2.0"
+				"7.0.1"
 			],
 			"compatible_game_version": [
-				"1.1.0",
-				"1.2.1",
-				"1.2.2"
+				"1.2.2",
+				"2.2.0"
 			],
-			"config_schema": {}
+			"config_schema": {
+				"type": "object",
+				"properties": {
+					"unused": {
+						"type": "boolean",
+						"default": false
+					}
+				}
+			}
 		}
 	}
 }
